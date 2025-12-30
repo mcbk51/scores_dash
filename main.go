@@ -13,6 +13,9 @@ import (
 
 func main (){
 	app := tview.NewApplication()
+
+	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+	tview.Styles.ContrastBackgroundColor = tcell.ColorDefault
 	
 	scoreview := tview.NewTextView().
 		SetDynamicColors(true).
@@ -67,7 +70,7 @@ func main (){
 			})
 
 			liveCount := config.CountLiveGames(games)
-			if liveCount == 0 {
+			if liveCount > 0 {
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
 			} else {
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
@@ -77,7 +80,7 @@ func main (){
 				statusColor := "white"
 				statusText := game.Status
 
-				if config.isLive(game.Status) {
+				if config.IsLive(game.Status) {
 					statusColor = "green"
 					statusText = "LIVE"
 				} else if game.Status == "Final" {
@@ -108,7 +111,7 @@ func main (){
 
 	// Input capture
 	scoreview.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlC || event.Key() == 'q' {
+		if event.Key() == tcell.KeyCtrlC || event.Rune() == 'q' || event.Rune() == 'Q' {
 			app.Stop()
 			return nil
 		}
