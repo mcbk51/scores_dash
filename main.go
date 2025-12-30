@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"time"
+	"sort"
 
 	"github.com/rivo/tview"
 	"github.com/gdamore/tcell/v2"
 	"github.com/mcbk51/scores_dash/api"
-	// "github.com/mcbk51/scores_dash/config"
+	"github.com/mcbk51/scores_dash/config"
 )
 
 func main (){
@@ -45,7 +46,7 @@ func main (){
 		for _, league := range leagueOrder {
 			games, exists := gamesByLeague[league]
 			if !exists || len(games) == 0 {
-				nextGame := api.findNextGame(league)
+				nextGame := config.FindNextGame(league)
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
 				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
 				if !nextGame.IsZero() {
@@ -57,15 +58,15 @@ func main (){
 			}
 
 			sort.Slice(games, func(i, j int) bool {
-				statusI := isLive(games[i].Status)
-				statusJ := isLive(games[j].Status)
+				statusI := config.IsLive(games[i].Status)
+				statusJ := config.IsLive(games[j].Status)
 				if statusI != statusJ {
 					return statusI
 				}
 				return games[i].StartTime.Before(games[j].StartTime)
 			})
 
-			liveCount := countLiveGames(games)
+			liveCount := config.CountLiveGames(games)
 			if liveCount == 0 {
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
 			} else {
@@ -76,7 +77,7 @@ func main (){
 				statusColor := "white"
 				statusText := game.Status
 
-				if isLive(game.Status) {
+				if config.isLive(game.Status) {
 					statusColor = "green"
 					statusText = "LIVE"
 				} else if game.Status == "Final" {
