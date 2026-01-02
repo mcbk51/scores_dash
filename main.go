@@ -145,22 +145,6 @@ func main (){
 	// Initial Load
 	go updateScores()
 
-	// Update footer every second
-	go func() {
-		footerTicker := time.NewTicker(time.Second)
-		defer footerTicker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case <-footerTicker.C:
-				app.QueueUpdateDraw(func() {
-				})
-			}
-		}
-	}()
-
 	//Set up a ticker to update scores every 30 seconds
 	go func() {
 		ticker := time.NewTicker(time.Second * 30)
