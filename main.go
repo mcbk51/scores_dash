@@ -25,8 +25,6 @@ func main (){
 		SetDynamicColors(true).
 		SetScrollable(true)
 
-    var lastUpdate time.Time
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -44,14 +42,12 @@ func main (){
 	}()
 
 	updateScores := func() {
-		games, err := api.GetGames("live", time.Now())
+		games, err := api.GetGames("all", time.Now())
 		if err != nil {
 			fmt.Fprintf(scoreview, "[red]Error fetching scores: %v[-]\n", err)
 			app.Draw()
 			return
 		}
-
-		lastUpdate = time.Now()
 
 		scoreview.Clear()
 		fmt.Fprintf(scoreview, "[yellow]=== LIVE SPORTS SCORES ===[-]\n\n")
@@ -137,47 +133,6 @@ func main (){
 		app.Draw()
 	}
 
-	updateFooter := func() {
-		if lastUpdate.IsZero() {
-			return
-		}
-
-		elapsed := time.Since(lastUpdate)
-		remaining := 30*time.Second - elapsed
-		if remaining < 0 {
-			remaining = 0
-		}
-
-		scoreview.ScrollToEnd()
-		currentText := scoreview.GetText(false)
-
-		lines := len(currentText)
-		if lines > 0 {
-			lastNewline := -1 
-	   		count := 0
-			for i := len(currentText) - 1; i >= 0; i-- {
-				if currentText[i] == '\n' {
-					count++
-					if count == 2 {
-						lastNewline = i
-						break
-					}
-				}
-			}
-			if lastNewline > 0 {
-				scoreview.Clear()
-				scoreview.Write([]byte(currentText[:lastNewline]))
-			}
-		}
-
-		fmt.Fprintf(scoreview, "\n\n[gray]Last updated: %s (%ds ago) | Next refresh in %ds | Press 'q' or Ctrl+C to quit[-]",
-			lastUpdate.Format("3:04:05 PM"),
-			int(elapsed.Seconds()),
-			int(remaining.Seconds()))
-		
-		app.Draw()
-	}
-
 	// Input capture
 	scoreview.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlC || event.Rune() == 'q' || event.Rune() == 'Q' {
@@ -201,7 +156,6 @@ func main (){
 
 			case <-footerTicker.C:
 				app.QueueUpdateDraw(func() {
-					updateFooter()
 				})
 			}
 		}
