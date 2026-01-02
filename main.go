@@ -28,10 +28,20 @@ func main (){
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	quitChan := make(chan bool, 1)
 	quit := func() {
+		select {
+		case quitChan <- true:
+		default:
+		}
 		cancel()
+
+		go func() {
+			time.Sleep(time.Millisecond * 30)
+			fmt.Println("\nQuitting...")
+			os.Exit(0)
+		}()
 		app.Stop()
-		os.Exit(0)
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -42,8 +52,26 @@ func main (){
 	}()
 
 	updateScores := func() {
+		select {
+		case <-quitChan:
+			return
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		games, err := api.GetGames("all", time.Now())
+		select {
+		case <-quitChan:
+			return
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+
 		if err != nil {
+			scoreview.Clear()
 			fmt.Fprintf(scoreview, "[red]Error fetching scores: %v[-]\n", err)
 			app.Draw()
 			return
@@ -51,6 +79,7 @@ func main (){
 
 		scoreview.Clear()
 		fmt.Fprintf(scoreview, "[yellow]=== LIVE SPORTS SCORES ===[-]\n\n")
+		fmt.Fprintf(scoreview, "[grey]Updated: %s | Press 'q' to quit[-]\n\n", time.Now().Format("3:04 PM"))
 
 
 		//  Group by league
@@ -133,9 +162,8 @@ func main (){
 		app.Draw()
 	}
 
-	// Input capture
 	scoreview.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlC || event.Rune() == 'q' || event.Rune() == 'Q' {
+		if event.Key() == tcell.KeyCtrlC || event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
 			quit()
 			return nil
 		}
@@ -153,10 +181,10 @@ func main (){
 			select {
 			case <-ctx.Done():
 				return
+			case <-quitChan:
+				return
 			case <-ticker.C:
-				app.QueueUpdateDraw(func() {
-					updateScores()
-				})
+			  	go updateScores()
 			}
 		}
 	}()
