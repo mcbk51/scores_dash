@@ -1,7 +1,7 @@
 package config
 
 import (
-	"sort"
+	"sort"	
 	"time"
 	"github.com/mcbk51/scores_dash/api"
 )
@@ -23,13 +23,14 @@ func FindNextGame(league string) time.Time {
 	}
 	return time.Time{}
 }
+	
+func IsUpcoming(startTime time.Time, duration time.Duration) bool {
+	now := time.Now()
+	return startTime.After(now) && startTime.Before(now.Add(duration))
+}
 
 func IsLive(status string) bool {
 	return status == "STATUS_IN_PROGRESS" || status == "In Progress" || status == "STATUS_HALFTIME" || status == "Halftime"
-}
-
-func IsFinal(status string) bool {
-	return status == "STATUS_FINAL" || status == "Final"
 }
 
 func CountLiveGames(games []api.Game) int {
