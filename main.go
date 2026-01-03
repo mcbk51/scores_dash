@@ -101,12 +101,12 @@ func main (){
 		for _, league := range leagueOrder {
 			games, exists := gamesByLeague[league]
 			if !exists || len(games) == 0 {
-				nextGame := config.FindNextGame(league)
+				nextGameTime, awayTeam, homeTeam, dateStr := config.FindNextGame(league)
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
 				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
-				if !nextGame.IsZero() {
-					localTime := nextGame.Local()
-					fmt.Fprintf(scoreview, "  [gray]Next game: %s[-]\n\n", localTime.Format("Mon, Jan 2 at 3:04 PM"))
+				if !nextGameTime.IsZero() {
+					localTime := nextGameTime.Local()
+					fmt.Fprintf(scoreview, "  [gray]Next game: %s @ %s - %s at %s[-]\n\n", awayTeam, homeTeam, dateStr, localTime.Format("3:04 PM"))
 				} else {
 					fmt.Fprintf(scoreview, "\n")
 				}
