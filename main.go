@@ -145,7 +145,7 @@ func main (){
 					continue
 				}
 					
-				fmt.Fprintf(scoreview, "  %s (%s) [white]%d[-]  @  %s (%s) [white]%d[-]  [%s][%s][-]\n",
+				fmt.Fprintf(scoreview, "  %s (%s) [purple]%d[-]  @  %s (%s) [purple]%d[-]  [%s][%s][-]\n",
 					game.AwayTeam,
 					game.AwayRecord,
 					game.AwayScore,
