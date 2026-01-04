@@ -21,6 +21,8 @@ type Game struct {
 	AwayRecord string    `json:"away_record"`
 	Clock      string    `json:"clock"`
 	Period     string    `json:"period"`
+	Spread     string    `json:"spread"`
+	OverUnder  string    `json:"over_under"`
 }
 
 type ESPNResponse struct {
@@ -39,6 +41,28 @@ type ESPNResponse struct {
 			Notes []struct {
 				Headline string `json:"headline"`
 			} `json:"notes"`
+			Odds []struct {
+				Provider struct {
+					Name string `json:"name"`
+				} `json:"provider"`
+				Details string `json:"details"`
+				OverUnder float64 `json:"overUnder"`
+				Spread float64 `json:"spread"`
+				OverOdds int `json:"overOdds"`
+				UnderOdds int `json:"underOdds"`
+				AwayTeamOdds struct {
+					Favorite bool `json:"favorite"`
+					Underdog bool `json:"underdog"`
+					Moneyline int `json:"moneyline"`
+					SpreadOdds int `json:"spreadOdds"`
+				} `json:"awayTeamOdds"`
+				HomeTeamOdds struct {
+					Favorite bool `json:"favorite"`
+					Underdog bool `json:"underdog"`
+					Moneyline int `json:"moneyline"`
+					SpreadOdds int `json:"spreadOdds"`
+					} `json:"homeTeamOdds"`
+			} `json:"odds"`
 			Competitors []struct {
 				Team struct {
 					DisplayName  string `json:"displayName"`
@@ -166,6 +190,30 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 			}
 		}
 
+		// Process odds
+		var spread, overUnder string
+
+		if len(comp.Odds) > 0 {
+			odds := comp.Odds[0]
+
+			if odds.Spread != 0 {
+				favoriteTeam := ""
+				if odds.HomeTeamOdds.Favorite {
+					spread = fmt.Sprintf("%.1f", -odds.Spread)
+				} else if odds.AwayTeamOdds.Favorite {
+					spread = fmt.Sprintf("%.1f", odds.Spread)
+				}
+
+				if favoriteTeam != "" {
+					spread = fmt.Sprintf("%s %.1f", favoriteTeam, odds.Spread)
+				}
+			}
+
+			if odds.OverUnder != 0 {
+				overUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
+			}
+		}
+
 		game := Game{
 			HomeTeam:   homeTeam,
 			AwayTeam:   awayTeam,
@@ -178,6 +226,8 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 			AwayRecord: awayRecord,
 			Clock:      clock,
 			Period:     period,
+			Spread:     spread,
+			OverUnder:  overUnder,
 		}
 
 		games = append(games, game)
