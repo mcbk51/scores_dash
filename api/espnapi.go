@@ -5,29 +5,34 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"strings"
 	"time"
 )
 
 type Game struct {
-	HomeTeam   string    `json:"home_team"`
-	AwayTeam   string    `json:"away_team"`
-	StartTime  time.Time `json:"start_time"`
-	League     string    `json:"league"`
-	Status     string    `json:"status"`
-	HomeScore  int       `json:"home_score"`
-	AwayScore  int       `json:"away_score"`
-	HomeRecord string    `json:"home_record"`
-	AwayRecord string    `json:"away_record"`
-	Clock      string    `json:"clock"`
-	Period     string    `json:"period"`
-	AwaySpread string    `json:"away_spread"`
-	HomeSpread string    `json:"home_spread"`
-	OverUnder  string    `json:"over_under"`
+	EventID    	   string    `json:"event_id"`
+	CompetitionID  string    `json:"competition_id"`
+	HomeTeam	   string    `json:"home_team"`
+	AwayTeam	   string    `json:"away_team"`
+	StartTime	   time.Time `json:"start_time"`
+	League		   string    `json:"league"`
+	Status		   string    `json:"status"`
+	HomeScore	   int       `json:"home_score"`
+	AwayScore	   int       `json:"away_score"`
+	HomeRecord	   string    `json:"home_record"`
+	AwayRecord	   string    `json:"away_record"`
+	Clock		   string    `json:"clock"`
+	Period		   string    `json:"period"`
+	AwaySpread	   string    `json:"away_spread"`
+	HomeSpread	   string    `json:"home_spread"`
+	OverUnder	   string    `json:"over_under"`
 }
+
 
 type ESPNResponse struct {
 	Events []struct {
+		ID       string  `json:"id"`
 		Name      string `json:"name"`
 		ShortName string `json:"shortName"`
 		Date      string `json:"date"`
@@ -39,6 +44,7 @@ type ESPNResponse struct {
 			Period       int `json:"period"`
 		} `json:"status"`
 		Competitions []struct {
+			ID string `json:"id"`
 			Notes []struct {
 				Headline string `json:"headline"`
 			} `json:"notes"`
@@ -82,10 +88,43 @@ type ESPNResponse struct {
 	} `json:"events"`
 }
 
+
+type Odds struct {
+	Provider struct {
+		Name string `json:"name"`
+	} `json:"provider"`
+	Details string `json:"details"`
+	OverUnder float64 `json:"overUnder"`
+	Spread float64 `json:"spread"`
+	AwayTeamOdds struct {
+		Favorite bool `json:"favorite"`
+		Underdog bool `json:"underdog"`
+		Moneyline int `json:"moneyline"`
+		SpreadOdds int `json:"spreadOdds"`
+	} `json:"awayTeamOdds"`
+	HomeTeamOdds struct {
+		Favorite bool `json:"favorite"`
+		Underdog bool `json:"underdog"`
+		Moneyline int `json:"moneyline"`
+		SpreadOdds int `json:"spreadOdds"`
+	} `json:"homeTeamOdds"`
+}
+
+type OddsResponse struct {
+	Items []Odds `json:"items"`
+}
+
 // Team's win-loss record
 type TeamRecord struct {
 	TeamName string
 	Record   string
+}
+
+var sportMap = map[string]string{
+	"nfl": "football",
+	"nba": "basketball",
+	"nhl": "hockey",
+	"mlb": "baseball",
 }
 
 // Fetches games for the specified league and date
@@ -105,6 +144,11 @@ func GetGames(league string, date time.Time) ([]Game, error) {
 		}
 		games = append(games, leagueGames...)
 	}
+
+	if len(games) > 0 {
+		fetchAllOdds(games)
+	}
+
 
 	return games, nil
 }
@@ -168,6 +212,7 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 		}
 
 		comp := event.Competitions[0]
+
 		var homeTeam, awayTeam string
 		var homeScore, awayScore int
 		var homeRecord, awayRecord string
@@ -191,47 +236,95 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 			}
 		}
 
-		// Process odds
-		var awaySpread, homeSpread, overUnder string
-		if len(comp.Odds) > 0 {
-			odds := comp.Odds[0]
-
-			if odds.Spread != 0 {
-				if odds.HomeTeamOdds.Favorite {
-					homeSpread = fmt.Sprintf("%.1f", -odds.Spread)
-					awaySpread = fmt.Sprintf("+%.1f", odds.Spread)
-				} else if odds.AwayTeamOdds.Favorite {
-					awaySpread = fmt.Sprintf("%.1f", -odds.Spread)
-					homeSpread = fmt.Sprintf("+%.1f", odds.Spread)
-				}
-			}
-
-			if odds.OverUnder != 0 {
-				overUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
-			}
+		eventID := event.ID
+		compID := comp.ID
+		if compID == "" {
+			compID = eventID
 		}
 
 		game := Game{
-			HomeTeam:   homeTeam,
-			AwayTeam:   awayTeam,
-			StartTime:  startTime,
-			League:     strings.ToUpper(league),
-			Status:     event.Status.Type.Description,
-			HomeScore:  homeScore,
-			AwayScore:  awayScore,
-			HomeRecord: homeRecord,
-			AwayRecord: awayRecord,
-			Clock:      clock,
-			Period:     period,
-			AwaySpread: awaySpread,
-			HomeSpread: homeSpread,
-			OverUnder:  overUnder,
+			EventID:        eventID,
+			CompetitionID:  compID,
+			HomeTeam:		homeTeam,
+			AwayTeam:		awayTeam,
+			StartTime:		startTime,
+			League:			strings.ToUpper(league),
+			Status:			event.Status.Type.Description,
+			HomeScore:		homeScore,
+			AwayScore:		awayScore,
+			HomeRecord:		homeRecord,
+			AwayRecord:		awayRecord,
+			Clock:			clock,
+			Period:			period,
+
 		}
 
 		games = append(games, game)
 	}
 
 	return games, nil
+}
+
+func fetchAllOdds(games []Game) {
+	var wg sync.WaitGroup
+
+		for i := range games {
+			wg.Add(1)
+			go func(g *Game) {
+				defer wg.Done()
+				fetchOddsForGame(g)
+			}(&games[i])
+		}
+
+	wg.Wait()
+}
+
+
+func fetchOddsForGame(game *Game) {
+	sport, ok := sportMap[strings.ToLower(game.League)]
+	if !ok {
+		return
+	}
+
+	league := strings.ToLower(game.League)
+	url := fmt.Sprintf("https://sports.core.api.espn.com/v2/sports/%s/leagues/%s/events/%s/competitions/%s/odds", sport, league, game.EventID, game.CompetitionID,)	
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var oddsResp OddsResponse
+	if err := json.Unmarshal(body, &oddsResp); err != nil {
+		return
+	}
+
+	if len(oddsResp.Items) == 0 {
+		return
+	}
+
+	odds := oddsResp.Items[0]
+
+	if odds.Spread != 0 {
+		if odds.HomeTeamOdds.Favorite {
+			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
+			game.AwaySpread = fmt.Sprintf("+%.1f", odds.Spread)
+		} else if odds.AwayTeamOdds.Favorite {
+			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+			game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
+		}
+	}
+
 }
 
 func formatPeriod(period int, league string) string {

@@ -148,16 +148,31 @@ func main (){
 				} else {
 					continue
 				}
-					
-				fmt.Fprintf(scoreview, "  %s (%s) [purple]%d[-]  @  %s (%s) [purple]%d[-]  [%s][%s][-]\n",
-					game.AwayTeam,
-					game.AwayRecord,
+
+				awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
+				if game.AwaySpread != "" {
+					awayInfo += fmt.Sprintf("[cyan][%s][-]", game.AwaySpread)
+				}
+
+				homeInfo := fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
+				if game.HomeSpread != "" {
+					homeInfo += fmt.Sprintf("[cyan][%s][-]", game.HomeSpread)
+				}
+
+				oddsPrefix := ""
+				if game.OverUnder != "" {
+					oddsPrefix = fmt.Sprintf(" [cyan][%s][-]", game.OverUnder)
+				}
+
+				fmt.Fprintf(scoreview, "  %s %s [purple]%d[-]  @  %s [purple]%d[-]  [%s]{%s}[-]\n",
+					oddsPrefix,
+					awayInfo,
 					game.AwayScore,
-					game.HomeTeam,
-					game.HomeRecord,
+					homeInfo,
 					game.HomeScore,
 					statusColor,
 					statusText)
+
 			}
 			fmt.Fprintf(scoreview, "\n")
 			
