@@ -21,7 +21,8 @@ type Game struct {
 	AwayRecord string    `json:"away_record"`
 	Clock      string    `json:"clock"`
 	Period     string    `json:"period"`
-	Spread     string    `json:"spread"`
+	AwaySpread string    `json:"away_spread"`
+	HomeSpread string    `json:"home_spread"`
 	OverUnder  string    `json:"over_under"`
 }
 
@@ -191,21 +192,17 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 		}
 
 		// Process odds
-		var spread, overUnder string
-
+		var awaySpread, homeSpread, overUnder string
 		if len(comp.Odds) > 0 {
 			odds := comp.Odds[0]
 
 			if odds.Spread != 0 {
-				favoriteTeam := ""
 				if odds.HomeTeamOdds.Favorite {
-					spread = fmt.Sprintf("%.1f", -odds.Spread)
+					homeSpread = fmt.Sprintf("%.1f", -odds.Spread)
+					awaySpread = fmt.Sprintf("+%.1f", odds.Spread)
 				} else if odds.AwayTeamOdds.Favorite {
-					spread = fmt.Sprintf("%.1f", odds.Spread)
-				}
-
-				if favoriteTeam != "" {
-					spread = fmt.Sprintf("%s %.1f", favoriteTeam, odds.Spread)
+					awaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+					homeSpread = fmt.Sprintf("+%.1f", odds.Spread)
 				}
 			}
 
@@ -226,7 +223,8 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 			AwayRecord: awayRecord,
 			Clock:      clock,
 			Period:     period,
-			Spread:     spread,
+			AwaySpread: awaySpread,
+			HomeSpread: homeSpread,
 			OverUnder:  overUnder,
 		}
 
