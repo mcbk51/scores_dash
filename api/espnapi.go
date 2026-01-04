@@ -19,6 +19,8 @@ type Game struct {
 	AwayScore  int       `json:"away_score"`
 	HomeRecord string    `json:"home_record"`
 	AwayRecord string    `json:"away_record"`
+	Clock      string    `json:"clock"`
+	Period     string    `json:"period"`
 }
 
 type ESPNResponse struct {
@@ -30,6 +32,8 @@ type ESPNResponse struct {
 			Type struct {
 				Description string `json:"description"`
 			} `json:"type"`
+			DisplayClock string `json:"displayClock"`
+			Period       int `json:"period"`
 		} `json:"status"`
 		Competitions []struct {
 			Notes []struct {
@@ -123,6 +127,8 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 	for _, event := range espnResp.Events {
 		// Fixing the game start time
 		startTime, err := time.Parse(time.RFC3339, event.Date)
+		clock := event.Status.DisplayClock
+		period := formatPeriod(event.Status.Period, league)
 		if err != nil {
 			startTime, err = time.Parse("2006-01-02T15:04Z", event.Date)
 			if err != nil {
@@ -170,6 +176,8 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 			AwayScore:  awayScore,
 			HomeRecord: homeRecord,
 			AwayRecord: awayRecord,
+			Clock:      clock,
+			Period:     period,
 		}
 
 		games = append(games, game)
@@ -177,6 +185,85 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 
 	return games, nil
 }
+
+func formatPeriod(period int, league string) string {
+	switch league {
+	case "nfl":
+		switch period {
+		case 1:
+			return "1st Qtr"
+		case 2:
+			return "2nd Qtr"
+		case 3:
+			return "3rd Qtr"
+		case 4:
+			return "4th Qtr"
+		case 5:
+			return "OT"
+		default:
+			return ""
+		}
+
+	case "nba":
+		switch period {
+		case 1:
+			return "1st Qtr"
+		case 2:
+			return "2nd Qtr"
+		case 3:
+			return "3rd Qtr"
+		case 4:
+			return "4th Qtr"
+		case 5:
+			return "OT"
+		default:
+			return ""
+		}
+
+	case "nhl":
+		switch period {
+		case 1:
+			return "1st Per"
+		case 2:
+			return "2nd Per"
+		case 3:
+			return "3rd Per"
+		case 4:
+			return "OT"
+		default:
+			return ""
+		}
+
+	case "mlb":
+		switch period {
+		case 1:
+			return "1st Inn"
+		case 2:
+			return "2nd Inn"
+		case 3:
+			return "3rd Inn"
+		case 4:
+			return "4th Inn"
+		case 5:
+			return "5th Inn"
+		case 6:
+			return "6th Inn"
+		case 7:
+			return "7th Inn"
+		case 8:
+			return "8th Inn"
+		case 9:
+			return "9th Inn"
+		case 10:
+			return "Extra Inn"
+		default:
+			return fmt.Sprintf("%dth", period)
+		}
+	default:
+		return ""
+	}
+}
+
 
 // Extracts the appropriate record from the records array
 func extractRecord(records []struct {
