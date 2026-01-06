@@ -325,6 +325,10 @@ func fetchOddsForGame(game *Game) {
 		}
 	}
 
+	if odds.OverUnder != 0 {
+		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
+	}
+
 }
 
 func formatPeriod(period int, league string) string {
