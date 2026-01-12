@@ -5,34 +5,46 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 	"strings"
+	"sync"
 	"time"
 )
 
-type Game struct {
-	EventID    	   string    `json:"event_id"`
-	CompetitionID  string    `json:"competition_id"`
-	HomeTeam	   string    `json:"home_team"`
-	AwayTeam	   string    `json:"away_team"`
-	StartTime	   time.Time `json:"start_time"`
-	League		   string    `json:"league"`
-	Status		   string    `json:"status"`
-	HomeScore	   int       `json:"home_score"`
-	AwayScore	   int       `json:"away_score"`
-	HomeRecord	   string    `json:"home_record"`
-	AwayRecord	   string    `json:"away_record"`
-	Clock		   string    `json:"clock"`
-	Period		   string    `json:"period"`
-	AwaySpread	   string    `json:"away_spread"`
-	HomeSpread	   string    `json:"home_spread"`
-	OverUnder	   string    `json:"over_under"`
+const (
+	OddsProviderCaesar     = 38
+	OddsProviderBet365     = 2000
+	OddsProviderDraftKings = 41
+)
+
+var sportMap = map[string]string{
+	"nfl": "football",
+	"nba": "basketball",
+	"nhl": "hockey",
+	"mlb": "baseball",
 }
 
+type Game struct {
+	EventID       string    `json:"event_id"`
+	CompetitionID string    `json:"competition_id"`
+	HomeTeam      string    `json:"home_team"`
+	AwayTeam      string    `json:"away_team"`
+	StartTime     time.Time `json:"start_time"`
+	League        string    `json:"league"`
+	Status        string    `json:"status"`
+	HomeScore     int       `json:"home_score"`
+	AwayScore     int       `json:"away_score"`
+	HomeRecord    string    `json:"home_record"`
+	AwayRecord    string    `json:"away_record"`
+	Clock         string    `json:"clock"`
+	Period        string    `json:"period"`
+	AwaySpread    string    `json:"away_spread"`
+	HomeSpread    string    `json:"home_spread"`
+	OverUnder     string    `json:"over_under"`
+}
 
 type ESPNResponse struct {
 	Events []struct {
-		ID       string  `json:"id"`
+		ID        string `json:"id"`
 		Name      string `json:"name"`
 		ShortName string `json:"shortName"`
 		Date      string `json:"date"`
@@ -41,10 +53,10 @@ type ESPNResponse struct {
 				Description string `json:"description"`
 			} `json:"type"`
 			DisplayClock string `json:"displayClock"`
-			Period       int `json:"period"`
+			Period       int    `json:"period"`
 		} `json:"status"`
 		Competitions []struct {
-			ID string `json:"id"`
+			ID    string `json:"id"`
 			Notes []struct {
 				Headline string `json:"headline"`
 			} `json:"notes"`
@@ -52,23 +64,23 @@ type ESPNResponse struct {
 				Provider struct {
 					Name string `json:"name"`
 				} `json:"provider"`
-				Details string `json:"details"`
-				OverUnder float64 `json:"overUnder"`
-				Spread float64 `json:"spread"`
-				OverOdds int `json:"overOdds"`
-				UnderOdds int `json:"underOdds"`
+				Details      string  `json:"details"`
+				OverUnder    float64 `json:"overUnder"`
+				Spread       float64 `json:"spread"`
+				OverOdds     int     `json:"overOdds"`
+				UnderOdds    int     `json:"underOdds"`
 				AwayTeamOdds struct {
-					Favorite bool `json:"favorite"`
-					Underdog bool `json:"underdog"`
-					Moneyline int `json:"moneyline"`
-					SpreadOdds int `json:"spreadOdds"`
+					Favorite   bool `json:"favorite"`
+					Underdog   bool `json:"underdog"`
+					Moneyline  int  `json:"moneyline"`
+					SpreadOdds int  `json:"spreadOdds"`
 				} `json:"awayTeamOdds"`
 				HomeTeamOdds struct {
-					Favorite bool `json:"favorite"`
-					Underdog bool `json:"underdog"`
-					Moneyline int `json:"moneyline"`
-					SpreadOdds int `json:"spreadOdds"`
-					} `json:"homeTeamOdds"`
+					Favorite   bool `json:"favorite"`
+					Underdog   bool `json:"underdog"`
+					Moneyline  int  `json:"moneyline"`
+					SpreadOdds int  `json:"spreadOdds"`
+				} `json:"homeTeamOdds"`
 			} `json:"odds"`
 			Competitors []struct {
 				Team struct {
@@ -88,43 +100,10 @@ type ESPNResponse struct {
 	} `json:"events"`
 }
 
-
-type Odds struct {
-	Provider struct {
-		Name string `json:"name"`
-	} `json:"provider"`
-	Details string `json:"details"`
-	OverUnder float64 `json:"overUnder"`
-	Spread float64 `json:"spread"`
-	AwayTeamOdds struct {
-		Favorite bool `json:"favorite"`
-		Underdog bool `json:"underdog"`
-		Moneyline int `json:"moneyline"`
-		SpreadOdds int `json:"spreadOdds"`
-	} `json:"awayTeamOdds"`
-	HomeTeamOdds struct {
-		Favorite bool `json:"favorite"`
-		Underdog bool `json:"underdog"`
-		Moneyline int `json:"moneyline"`
-		SpreadOdds int `json:"spreadOdds"`
-	} `json:"homeTeamOdds"`
-}
-
-type OddsResponse struct {
-	Items []Odds `json:"items"`
-}
-
 // Team's win-loss record
 type TeamRecord struct {
 	TeamName string
 	Record   string
-}
-
-var sportMap = map[string]string{
-	"nfl": "football",
-	"nba": "basketball",
-	"nhl": "hockey",
-	"mlb": "baseball",
 }
 
 // Fetches games for the specified league and date
@@ -146,9 +125,8 @@ func GetGames(league string, date time.Time) ([]Game, error) {
 	}
 
 	if len(games) > 0 {
-		fetchAllOdds(games)
+		fecthAllOdds(games)
 	}
-
 
 	return games, nil
 }
@@ -243,92 +221,25 @@ func fetchGamesForLeague(league string, date time.Time) ([]Game, error) {
 		}
 
 		game := Game{
-			EventID:        eventID,
-			CompetitionID:  compID,
-			HomeTeam:		homeTeam,
-			AwayTeam:		awayTeam,
-			StartTime:		startTime,
-			League:			strings.ToUpper(league),
-			Status:			event.Status.Type.Description,
-			HomeScore:		homeScore,
-			AwayScore:		awayScore,
-			HomeRecord:		homeRecord,
-			AwayRecord:		awayRecord,
-			Clock:			clock,
-			Period:			period,
-
+			EventID:       eventID,
+			CompetitionID: compID,
+			HomeTeam:      homeTeam,
+			AwayTeam:      awayTeam,
+			StartTime:     startTime,
+			League:        strings.ToUpper(league),
+			Status:        event.Status.Type.Description,
+			HomeScore:     homeScore,
+			AwayScore:     awayScore,
+			HomeRecord:    homeRecord,
+			AwayRecord:    awayRecord,
+			Clock:         clock,
+			Period:        period,
 		}
 
 		games = append(games, game)
 	}
 
 	return games, nil
-}
-
-func fetchAllOdds(games []Game) {
-	var wg sync.WaitGroup
-
-		for i := range games {
-			wg.Add(1)
-			go func(g *Game) {
-				defer wg.Done()
-				fetchOddsForGame(g)
-			}(&games[i])
-		}
-
-	wg.Wait()
-}
-
-
-func fetchOddsForGame(game *Game) {
-	sport, ok := sportMap[strings.ToLower(game.League)]
-	if !ok {
-		return
-	}
-
-	league := strings.ToLower(game.League)
-	url := fmt.Sprintf("https://sports.core.api.espn.com/v2/sports/%s/leagues/%s/events/%s/competitions/%s/odds", sport, league, game.EventID, game.CompetitionID,)	
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	var oddsResp OddsResponse
-	if err := json.Unmarshal(body, &oddsResp); err != nil {
-		return
-	}
-
-	if len(oddsResp.Items) == 0 {
-		return
-	}
-
-	odds := oddsResp.Items[0]
-
-	if odds.Spread != 0 {
-		if odds.HomeTeamOdds.Favorite {
-			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
-			game.AwaySpread = fmt.Sprintf("+%.1f", odds.Spread)
-		} else if odds.AwayTeamOdds.Favorite {
-			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
-			game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
-		}
-	}
-
-	if odds.OverUnder != 0 {
-		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
-	}
-
 }
 
 func formatPeriod(period int, league string) string {
@@ -409,7 +320,6 @@ func formatPeriod(period int, league string) string {
 	}
 }
 
-
 // Extracts the appropriate record from the records array
 func extractRecord(records []struct {
 	Name    string `json:"name"`
@@ -449,4 +359,90 @@ func extractRecord(records []struct {
 	}
 
 	return ""
+}
+
+func fecthAllOdds(games []Game) {
+	var wg sync.WaitGroup
+	for i := range games {
+		wg.Add(1)
+		go func(game Game) {
+			defer wg.Done()
+			fetchOddsForGame(&game, OddsProviderCaesar)
+		}(games[i])
+	}
+	wg.Wait()
+}
+
+type OddsResponse struct {
+	Provider struct {
+		Name string `json:"name"`
+	} `json:"provider"`
+	Details      string  `json:"details"`
+	OverUnder    float64 `json:"overUnder"`
+	Spread       float64 `json:"spread"`
+	AwayTeamOdds struct {
+		Favorite   bool `json:"favorite"`
+		Underdog   bool `json:"underdog"`
+		Moneyline  int  `json:"moneyline"`
+		SpreadOdds int  `json:"spreadOdds"`
+	} `json:"awayTeamOdds"`
+	HomeTeamOdds struct {
+		Favorite   bool `json:"favorite"`
+		Underdog   bool `json:"underdog"`
+		Moneyline  int  `json:"moneyline"`
+		SpreadOdds int  `json:"spreadOdds"`
+	} `json:"homeTeamOdds"`
+}
+
+func fetchOddsForGame(game *Game, providerID int) {
+	sport, ok := sportMap[strings.ToLower(game.League)]
+	if !ok {
+		return
+	}
+	league := strings.ToLower(game.League)
+
+	url := fmt.Sprintf("https://sports.core.api.espn.com/v2/sports/%s/leagues/%s/events/%s/competitions/%s/odds/%d", sport, league, game.EventID, game.CompetitionID, providerID)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	var odds OddsResponse
+	if err := json.Unmarshal(body, &odds); err != nil {
+		return
+	}
+
+	if odds.Spread != 0 {
+		if odds.HomeTeamOdds.Favorite {
+			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
+			game.AwaySpread = fmt.Sprintf("+%.1f", odds.Spread)
+		} else if odds.AwayTeamOdds.Favorite {
+			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+			game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
+		} else {
+			if odds.Spread > 0 {
+				game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
+				game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+			} else {
+				game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
+				game.AwaySpread = fmt.Sprintf("-%.1f", -odds.Spread)
+			}
+		}
+	}
+
+	if odds.OverUnder != 0 {
+		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
+	}
+
 }
