@@ -124,9 +124,7 @@ func GetGames(league string, date time.Time) ([]Game, error) {
 		games = append(games, leagueGames...)
 	}
 
-	if len(games) > 0 {
-		fecthAllOdds(games)
-	}
+	fecthAllOdds(games)
 
 	return games, nil
 }
@@ -364,11 +362,13 @@ func extractRecord(records []struct {
 func fecthAllOdds(games []Game) {
 	var wg sync.WaitGroup
 	for i := range games {
-		wg.Add(1)
-		go func(game Game) {
-			defer wg.Done()
-			fetchOddsForGame(&game, OddsProviderCaesar)
-		}(games[i])
+		if games[i].OverUnder == "" && games[i].HomeSpread == ""{
+			wg.Add(1)
+			go func(game *Game) {
+				defer wg.Done()
+				fetchOddsForGame(game, OddsProviderCaesar)
+			}(&games[i])
+		}
 	}
 	wg.Wait()
 }
@@ -383,7 +383,7 @@ type OddsResponse struct {
 	AwayTeamOdds struct {
 		Favorite   bool `json:"favorite"`
 		Underdog   bool `json:"underdog"`
-		Moneyline  int  `json:"moneyline"`
+		Moneyline  int  `jon:"moneyline"`
 		SpreadOdds int  `json:"spreadOdds"`
 	} `json:"awayTeamOdds"`
 	HomeTeamOdds struct {
