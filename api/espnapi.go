@@ -366,7 +366,7 @@ func fecthAllOdds(games []Game) {
 			wg.Add(1)
 			go func(game *Game) {
 				defer wg.Done()
-				fetchOddsForGame(game, OddsProviderCaesar)
+				fetchOddsForGame(game, OddsProviderDraftKings)
 			}(&games[i])
 		}
 	}
