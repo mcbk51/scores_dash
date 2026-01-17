@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"strconv"
 	"fmt"
 	"io"
 	"net/http"
@@ -374,25 +375,26 @@ func fecthAllOdds(games []Game) {
 }
 
 type OddsResponse struct {
-	Provider struct {
-		Name string `json:"name"`
-	} `json:"provider"`
-	Details      string  `json:"details"`
-	OverUnder    float64 `json:"overUnder"`
-	Spread       float64 `json:"spread"`
-	AwayTeamOdds struct {
-		Favorite   bool `json:"favorite"`
-		Underdog   bool `json:"underdog"`
-		Moneyline  int  `jon:"moneyline"`
-		SpreadOdds int  `json:"spreadOdds"`
-	} `json:"awayTeamOdds"`
-	HomeTeamOdds struct {
-		Favorite   bool `json:"favorite"`
-		Underdog   bool `json:"underdog"`
-		Moneyline  int  `json:"moneyline"`
-		SpreadOdds int  `json:"spreadOdds"`
-	} `json:"homeTeamOdds"`
+	Items []OddsItem `json:"items"`
+} 
+
+type OddsItem struct {
+	Provider Provider `json:"provider"`
+	Spread   float64  `json:"spread"`
+	OverUnder float64 `json:"overUnder"`
+	HomeTeamOdds TeamOdds `json:"homeTeamOdds"`
+	AwayTeamOdds TeamOdds `json:"awayTeamOdds"`
 }
+
+type Provider struct {
+	ID string `json:"id"`
+	Name string `json:"name"`
+}
+
+type TeamOdds struct {
+	Favorite   bool `json:"favorite"`
+}
+
 
 func fetchOddsForGame(game *Game, providerID int) {
 	sport, ok := sportMap[strings.ToLower(game.League)]
@@ -400,8 +402,7 @@ func fetchOddsForGame(game *Game, providerID int) {
 		return
 	}
 	league := strings.ToLower(game.League)
-
-	url := fmt.Sprintf("https://sports.core.api.espn.com/v2/sports/%s/leagues/%s/events/%s/competitions/%s/odds/%d", sport, league, game.EventID, game.CompetitionID, providerID)
+	url := fmt.Sprintf("https://sports.core.api.espn.com/v2/sports/%s/leagues/%s/events/%s/competitions/%s/odds?lang=en&region=us", sport, league, game.EventID, game.CompetitionID)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -423,13 +424,25 @@ func fetchOddsForGame(game *Game, providerID int) {
 		return
 	}
 
+	// Multiple odds providers
+	for _, item := range odds.Items {
+		if item.Provider.ID == strconv.Itoa(providerID) {
+			continue
+		}
+
+		applyOddsToGame(game, item)
+		return
+	}
+}
+
+func applyOddsToGame(game *Game, odds OddsItem) {
 	if odds.Spread != 0 {
 		if odds.HomeTeamOdds.Favorite {
 			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
 			game.AwaySpread = fmt.Sprintf("+%.1f", odds.Spread)
-		} else if odds.AwayTeamOdds.Favorite {
-			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+		}else if odds.AwayTeamOdds.Favorite {
 			game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
+			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
 		} else {
 			if odds.Spread > 0 {
 				game.HomeSpread = fmt.Sprintf("+%.1f", odds.Spread)
@@ -441,8 +454,7 @@ func fetchOddsForGame(game *Game, providerID int) {
 		}
 	}
 
-	if odds.OverUnder != 0 {
+	if odds.OverUnder != 0 { 
 		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
 	}
-
 }
