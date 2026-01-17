@@ -159,14 +159,12 @@ func main (){
 					homeInfo += fmt.Sprintf("[cyan][%s][-]", game.HomeSpread)
 				}
 
-				fmt.Fprintf(scoreview, " [cyan][-]%s %s [purple]%d[-]%s  @  %s [purple]%d[-]%s  [%s]{%s}[-]\n",
+				fmt.Fprintf(scoreview, " [cyan][-]%s %s [purple][-]%d  @  %s [purple][-]%d  [%s]{%s}[-]\n",
 					game.OverUnder,
 					awayInfo,
 					game.AwayScore,
-					game.AwaySpread,
 					homeInfo,
 					game.HomeScore,
-					game.HomeSpread,
 					statusColor,
 					statusText)
 
