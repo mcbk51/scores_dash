@@ -448,8 +448,8 @@ func applyOddsToGame(game *Game, odds OddsItem) {
 				game.HomeSpread = fmt.Sprintf("%.1f", +odds.Spread)
 				game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
 			} else {
-				game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
 				game.AwaySpread = fmt.Sprintf("%.1f", +odds.Spread)
+				game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
 			}
 		}
 	}
