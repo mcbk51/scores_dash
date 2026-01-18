@@ -438,18 +438,18 @@ func fetchOddsForGame(game *Game, providerID int) {
 func applyOddsToGame(game *Game, odds OddsItem) {
 	if odds.Spread != 0 {
 		if odds.HomeTeamOdds.Favorite {
-			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
-			game.AwaySpread = fmt.Sprintf("%.1f", +odds.Spread)
+			game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
+			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
 		}else if odds.AwayTeamOdds.Favorite {
-			game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
-			game.AwaySpread = fmt.Sprintf("%.1f", +odds.Spread)
+			game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
+			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
 		} else {
 			if odds.Spread > 0 {
-				game.HomeSpread = fmt.Sprintf("%.1f", +odds.Spread)
-				game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+				game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
+				game.AwaySpread = fmt.Sprintf("%.1f", odds.Spread)
 			} else {
-				game.AwaySpread = fmt.Sprintf("%.1f", +odds.Spread)
-				game.HomeSpread = fmt.Sprintf("%.1f", -odds.Spread)
+				game.AwaySpread = fmt.Sprintf("%.1f", odds.Spread)
+				game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
 			}
 		}
 	}

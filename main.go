@@ -106,6 +106,7 @@ func main (){
 				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
 				if !nextGameTime.IsZero() {
 					localTime := nextGameTime.Local()
+					// Output for next game
 					fmt.Fprintf(scoreview, "  [gray]Next game: %s @ %s - %s at %s[-]\n\n", awayTeam, homeTeam, dateStr, localTime.Format("3:04 PM"))
 				} else {
 					fmt.Fprintf(scoreview, "\n")
@@ -159,6 +160,7 @@ func main (){
 					homeInfo += fmt.Sprintf("[blue][%s][-]", game.HomeSpread)
 				}
 
+				// Mian output for live games
 				fmt.Fprintf(scoreview, " [-][blue]%s [white]%s [-][purple]%d  [white]@  [purple]%d [-]%s  [%s]{%s}[-]\n",
 					game.OverUnder,
 					awayInfo,
