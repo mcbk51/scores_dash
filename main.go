@@ -154,12 +154,12 @@ func main (){
 
 				awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
 				if game.AwaySpread != "" {
-					awayInfo += fmt.Sprintf("[blue][%s][-]", awayOdds)
+					awayInfo += fmt.Sprintf("[blue]%s[-]", awayOdds)
 				}
 
 				homeInfo := fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
 				if game.HomeSpread != "" {
-					homeInfo += fmt.Sprintf("[blue][%s][-]", homeOdds)
+					homeInfo += fmt.Sprintf("[blue]%s[-]", homeOdds)
 				}
 
 				// Mian output for live games
