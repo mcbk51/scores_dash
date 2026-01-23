@@ -127,7 +127,7 @@ func GetGames(league string, date time.Time) ([]Game, error) {
 		games = append(games, leagueGames...)
 	}
 
-	fecthAllOdds(games)
+	fetchAllOdds(games)
 
 	return games, nil
 }
@@ -362,7 +362,7 @@ func extractRecord(records []struct {
 	return ""
 }
 
-func fecthAllOdds(games []Game) {
+func fetchAllOdds(games []Game) {
 	var wg sync.WaitGroup
 	for i := range games {
 		if games[i].OverUnder == "" && games[i].HomeSpread == ""{
@@ -440,24 +440,25 @@ func fetchOddsForGame(game *Game, providerID int) {
 
 func applyOddsToGame(game *Game, odds OddsItem) {
 	if odds.Spread != 0 {
-		if odds.HomeTeamOdds.Favorite {
-			game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
-			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
-		}else if odds.AwayTeamOdds.Favorite {
-			game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
-			game.AwaySpread = fmt.Sprintf("%.1f", -odds.Spread)
+		spread := odds.Spread
+		if spread < 0 {
+			spread = -spread
+		}
+
+	if odds.HomeTeamOdds.Favorite {
+			game.HomeSpread = fmt.Sprintf("-%.1f", spread)
+			game.AwaySpread = fmt.Sprintf("+%.1f", spread)
+		} else if odds.AwayTeamOdds.Favorite {
+			game.AwaySpread = fmt.Sprintf("-%.1f", spread)
+			game.HomeSpread = fmt.Sprintf("+%.1f", spread)
 		} else {
-			if odds.Spread > 0 {
-				game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
-				game.AwaySpread = fmt.Sprintf("%.1f", odds.Spread)
-			} else {
-				game.AwaySpread = fmt.Sprintf("%.1f", odds.Spread)
-				game.HomeSpread = fmt.Sprintf("%.1f", odds.Spread)
-			}
+			// No favorite marked, default home as favorite
+			game.HomeSpread = fmt.Sprintf("-%.1f", spread)
+			game.AwaySpread = fmt.Sprintf("+%.1f", spread)
 		}
 	}
 
-	if odds.OverUnder != 0 { 
+	if odds.OverUnder != 0 {
 		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
 	}
 
