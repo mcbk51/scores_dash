@@ -38,6 +38,8 @@ type Game struct {
 	AwayRecord    string    `json:"away_record"`
 	Clock         string    `json:"clock"`
 	Period        string    `json:"period"`
+	HomeOdds      string    `json:"home_odds"`
+	AwayOdds      string    `json:"away_odds"`
 	AwaySpread    string    `json:"away_spread"`
 	HomeSpread    string    `json:"home_spread"`
 	OverUnder     string    `json:"over_under"`
@@ -393,6 +395,7 @@ type Provider struct {
 
 type TeamOdds struct {
 	Favorite   bool `json:"favorite"`
+	MoneyLine  int `json:"moneyLine"`
 }
 
 
@@ -456,5 +459,21 @@ func applyOddsToGame(game *Game, odds OddsItem) {
 
 	if odds.OverUnder != 0 { 
 		game.OverUnder = fmt.Sprintf("O/U %.1f", odds.OverUnder)
+	}
+
+	// Moneyline odds
+	if odds.HomeTeamOdds.MoneyLine != 0 {
+		if odds.HomeTeamOdds.MoneyLine > 0 {
+			game.HomeOdds = fmt.Sprintf("+%d", odds.HomeTeamOdds.MoneyLine)
+		} else {
+			game.HomeOdds = fmt.Sprintf("%d", odds.HomeTeamOdds.MoneyLine)
+		}
+	}
+	if odds.AwayTeamOdds.MoneyLine != 0 {
+		if odds.AwayTeamOdds.MoneyLine > 0 {
+			game.AwayOdds = fmt.Sprintf("+%d", odds.AwayTeamOdds.MoneyLine)
+		} else {
+			game.AwayOdds = fmt.Sprintf("%d", odds.AwayTeamOdds.MoneyLine)
+		}
 	}
 }

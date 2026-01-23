@@ -1,20 +1,23 @@
 package config
 
 import (
+	"fmt"
 	"sort"	
 	"time"
 	"github.com/mcbk51/scores_dash/api"
 )
 
 
-func FindNextGame(league string) (time.Time, string, string, string) {
+func FindNextGame(league string) (time.Time, string, string, string, string, string) {
 	games, err := api.GetGames(league, time.Now())
 	if err == nil && len(games) > 0 {
 		now := time.Now()
 		for _, game := range games {
 			if game.StartTime.After(now) {
+				awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
+				homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
 				dateStr  := formatGameDate(game.StartTime)
-				return game.StartTime, game.HomeTeam, game.AwayTeam, dateStr
+				return game.StartTime, game.HomeTeam, game.AwayTeam, dateStr, awayOdds, homeOdds
 			}
 		}
 	}
@@ -30,10 +33,23 @@ func FindNextGame(league string) (time.Time, string, string, string) {
 				return games[i].StartTime.Before(games[j].StartTime)
 			})
 			dateStr  := formatGameDate(games[0].StartTime)
-			return games[0].StartTime, games[0].HomeTeam, games[0].AwayTeam, dateStr
+			awayOdds := FormatOdds(games[0].AwaySpread, games[0].AwayOdds)
+			homeOdds := FormatOdds(games[0].HomeSpread, games[0].HomeOdds)
+			return games[0].StartTime, games[0].HomeTeam, games[0].AwayTeam, dateStr, homeOdds, awayOdds
 		}
 	}
-	return time.Time{}, "", "", ""
+	return time.Time{}, "", "", "", "", ""
+}
+
+func FormatOdds(spread string, moneyline string) string {
+	if spread != "" && moneyline != "" {
+		return fmt.Sprintf("[%s | %s]", spread, moneyline)
+	} else if spread != "" {
+		return fmt.Sprintf("[%s]", spread)
+	} else if moneyline != "" {
+		return fmt.Sprintf("[%s]", moneyline)
+	}
+	return ""
 }
 
 func formatGameDate(t time.Time) string {

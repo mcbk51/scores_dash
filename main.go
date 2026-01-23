@@ -101,13 +101,13 @@ func main (){
 		for _, league := range leagueOrder {
 			games, exists := gamesByLeague[league]
 			if !exists || len(games) == 0 {
-				nextGameTime, awayTeam, homeTeam, dateStr := config.FindNextGame(league)
+				nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := config.FindNextGame(league)
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
 				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
 				if !nextGameTime.IsZero() {
 					localTime := nextGameTime.Local()
 					// Output for next game
-					fmt.Fprintf(scoreview, "  [gray]Next game: %s @ %s - %s at %s[-]\n\n", awayTeam, homeTeam, dateStr, localTime.Format("3:04 PM"))
+					fmt.Fprintf(scoreview, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n\n", awayTeam, awayOdds, homeTeam, homeOdds, dateStr, localTime.Format("3:04 PM"))
 				} else {
 					fmt.Fprintf(scoreview, "\n")
 				}
@@ -133,6 +133,8 @@ func main (){
 			for _, game := range games {
 				statusColor := "white"
 				statusText := game.Status
+				awayOdds := config.FormatOdds(game.AwaySpread, game.AwayOdds)
+				homeOdds := config.FormatOdds(game.HomeSpread, game.HomeOdds)
 
 				if config.IsLive(game.Status) {
 					statusColor = "green"
@@ -152,12 +154,12 @@ func main (){
 
 				awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
 				if game.AwaySpread != "" {
-					awayInfo += fmt.Sprintf("[blue][%s][-]", game.AwaySpread)
+					awayInfo += fmt.Sprintf("[blue][%s][-]", awayOdds)
 				}
 
 				homeInfo := fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
 				if game.HomeSpread != "" {
-					homeInfo += fmt.Sprintf("[blue][%s][-]", game.HomeSpread)
+					homeInfo += fmt.Sprintf("[blue][%s][-]", homeOdds)
 				}
 
 				// Mian output for live games
