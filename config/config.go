@@ -67,6 +67,54 @@ func formatGameDate(t time.Time) string {
 
 	return gameDate.Format("Mon, Jan 2")
 }
+
+func AllGameFinishedforToday(games []api.Game) bool {
+	if len(games) == 0 {
+		return false
+	}
+
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.AddDate(0, 0, 1)
+	hasGamesToday := false
+
+	for _, game := range games {
+		if game.StartTime.After(todayStart) && game.StartTime.Before(todayEnd) {
+			hasGamesToday = true
+
+			if game.StartTime.After(now) || IsLive(game.Status) {
+				return false
+			}
+		}
+	}
+	
+	return hasGamesToday
+}
+
+func GetFinishedGamesToday(games []api.Game) []api.Game {
+	var finishedGames []api.Game
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.AddDate(0, 0, 1)
+
+	for _, game := range games {
+		if game.StartTime.After(todayStart) && game.StartTime.Before(todayEnd) {
+			if game.StartTime.Before(now) && IsLive(game.Status) {
+				finishedGames = append(finishedGames, game)
+			}
+		}
+	}
+
+	sort.Slice(finishedGames, func(i, j int) bool {
+		return finishedGames[i].StartTime.Before(finishedGames[j].StartTime)
+	})
+	
+	return finishedGames
+}
+
+func IsFinished(status string) bool {
+	return status == "STATUS_FINAL" || status == "Final" || status == "STATUS_FINAL_OT" || status == "Final/OT" || status == "STATUS_POSTPONED" || status == "Postponed"
+}
 	
 func IsUpcoming(startTime time.Time, duration time.Duration) bool {
 	now := time.Now()
