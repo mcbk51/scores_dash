@@ -117,7 +117,7 @@ func main (){
 				} 			
 
 				if len(finishedGames) > 0 {
-					fmt.Fprintf(scoreview, "[yellow]── Today's Results ──[-]\n")
+					fmt.Fprintf(scoreview, "[orange]── Finished Games Results ──[-]\n")
 					for _, game := range finishedGames {
 						config.PrintFinishedGames(scoreview, game)
 					}
@@ -187,7 +187,7 @@ func main (){
 			}
 
 			if len(finishedGames) > 0 {
-				fmt.Fprintf(scoreview, "[yellow]── Today's Results ──[-]\n")
+				fmt.Fprintf(scoreview, "[orange]── Finished Games Results ──[-]\n")
 				for _, game := range finishedGames {
 					config.PrintFinishedGames(scoreview, game)
 				}

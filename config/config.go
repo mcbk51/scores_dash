@@ -100,11 +100,11 @@ func GetFinishedGamesToday(games []api.Game) []api.Game {
 
 	for _, game := range games {
 		if game.StartTime.After(todayStart) && game.StartTime.Before(todayEnd) {
-			if game.StartTime.Before(now) && IsLive(game.Status) {
+			if IsFinished(game.Status) {
 				finishedGames = append(finishedGames, game)
 			}
 		}
-	}
+}
 
 	sort.Slice(finishedGames, func(i, j int) bool {
 		return finishedGames[i].StartTime.Before(finishedGames[j].StartTime)
@@ -114,7 +114,11 @@ func GetFinishedGamesToday(games []api.Game) []api.Game {
 }
 
 func IsFinished(status string) bool {
-	return status == "STATUS_FINAL" || status == "Final" || status == "STATUS_FINAL_OT" || status == "Final/OT" || status == "STATUS_POSTPONED" || status == "Postponed"
+	return status == "Final" || status == "STATUS_FINAL" ||
+		status == "Final/OT" || status == "STATUS_FINAL_OT" ||
+		status == "Final/2OT" || status == "Final/3OT" ||
+		status == "Postponed" || status == "STATUS_POSTPONED" ||
+		status == "Canceled" || status == "STATUS_CANCELED"
 }
 	
 func IsUpcoming(startTime time.Time, duration time.Duration) bool {
@@ -150,17 +154,22 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 		homeStyle = "white"
 	}
 
+	awayOdds := ""
+	if game.AwaySpread != "" {
+		awayOdds = fmt.Sprintf(" %s", game.AwaySpread)
+	}
+
+	homeOdds := ""
+	if game.HomeSpread != "" {
+		homeOdds = fmt.Sprintf(" %s", game.HomeSpread)
+	}
+	
 	oddsInfo := ""
 	if game.OverUnder != "" {
 		oddsInfo = fmt.Sprintf(" [blue]%s[-]", game.OverUnder)
 	}
 
-	spreadInfo := ""
-	if game.AwaySpread != "" {
-		spreadInfo = fmt.Sprintf(" [blue]%s[-]", game.AwaySpread)
-	}
-
-	fmt.Fprintf(scoreview, "  [%s]%s%s %d[-]  @  [%s]%s %d[-]  [gray]FINAL[-]%s\n", 
-		awayStyle, game.AwayTeam, spreadInfo, game.AwayScore, homeStyle, game.HomeTeam, game.HomeScore, oddsInfo)
+	fmt.Fprintf(scoreview, "  [%s]%s (%s)%s %d[-]  @  [%s]%s (%s)%s %d[-]  [gray]FINAL[-]%s\n", 
+		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, game.AwayScore, homeStyle, game.HomeTeam, game.HomeRecord, homeOdds, game.HomeScore, oddsInfo)
 }
 
