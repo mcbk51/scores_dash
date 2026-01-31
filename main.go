@@ -81,12 +81,14 @@ func main (){
 		fmt.Fprintf(scoreview, "[yellow]=== LIVE SPORTS SCORES ===[-]\n\n")
 		fmt.Fprintf(scoreview, "[grey]Updated: %s | Press 'q' to quit[-]\n\n", time.Now().Format("3:04 PM"))
 
-
 		//  Group by league
-		gamesByLeague := make(map[string][]api.Game)
+		activeByLeague := make(map[string][]api.Game)
+		allByLeague := make(map[string][]api.Game)
+
 		for _, game := range games {
+			allByLeague[game.League] = append(allByLeague[game.League], game)
 			if config.IsLive(game.Status) || config.IsUpcoming(game.StartTime, 30*time.Minute) {
-				gamesByLeague[game.League] = append(gamesByLeague[game.League], game)
+				activeByLeague[game.League] = append(activeByLeague[game.League], game)
 			}
 		}
 
@@ -99,38 +101,48 @@ func main (){
 		}
 
 		for _, league := range leagueOrder {
-			games, exists := gamesByLeague[league]
-			if !exists || len(games) == 0 {
+			activeGames := activeByLeague[league]
+			AllLeagueGames := allByLeague[league]
+			finishedGames := config.GetFinishedGamesToday(AllLeagueGames)
+
+			// No Active Games
+			if len(activeGames) == 0 {
 				nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := config.FindNextGame(league)
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
 				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
 				if !nextGameTime.IsZero() {
 					localTime := nextGameTime.Local()
 					// Output for next game
-					fmt.Fprintf(scoreview, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n\n", awayTeam, awayOdds, homeTeam, homeOdds, dateStr, localTime.Format("3:04 PM"))
-				} else {
-					fmt.Fprintf(scoreview, "\n")
+					fmt.Fprintf(scoreview, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds, homeTeam, homeOdds, dateStr, localTime.Format("3:04 PM"))
+				} 			
+
+				if len(finishedGames) > 0 {
+					fmt.Fprintf(scoreview, "[yellow]── Today's Results ──[-]\n")
+					for _, game := range finishedGames {
+						config.PrintFinishedGames(scoreview, game)
+					}
 				}
+				fmt.Fprintf(scoreview, "\n")
 				continue
 			}
 
-			sort.Slice(games, func(i, j int) bool {
-				statusI := config.IsLive(games[i].Status)
-				statusJ := config.IsLive(games[j].Status)
+			sort.Slice(activeGames, func(i, j int) bool {
+				statusI := config.IsLive(activeGames[i].Status)
+				statusJ := config.IsLive(activeGames[j].Status)
 				if statusI != statusJ {
 					return statusI
 				}
-				return games[i].StartTime.Before(games[j].StartTime)
+				return activeGames[i].StartTime.Before(activeGames[j].StartTime)
 			})
 
-			liveCount := config.CountLiveGames(games)
+			liveCount := config.CountLiveGames(activeGames)
 			if liveCount > 0 {
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
 			} else {
 				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
 			}
 
-			for _, game := range games {
+			for _, game := range activeGames {
 				statusColor := "white"
 				statusText := game.Status
 				awayOdds := config.FormatOdds(game.AwaySpread, game.AwayOdds)
@@ -173,9 +185,17 @@ func main (){
 					statusText)
 
 			}
+
+			if len(finishedGames) > 0 {
+				fmt.Fprintf(scoreview, "[yellow]── Today's Results ──[-]\n")
+				for _, game := range finishedGames {
+					config.PrintFinishedGames(scoreview, game)
+				}
+			}
+
 			fmt.Fprintf(scoreview, "\n")
-			
 		}
+					
 
 		app.Draw()
 	}
