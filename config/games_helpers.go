@@ -5,7 +5,6 @@ import (
 	"sort"	
 	"time"
 	"github.com/mcbk51/scores_dash/api"
-	"github.com/rivo/tview"
 )
 
 
@@ -141,35 +140,5 @@ func CountLiveGames(games []api.Game) int {
 }
 
 
-func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
-	var awayStyle, homeStyle string
-	if game.AwayScore > game.HomeScore {
-		awayStyle = "green"
-		homeStyle = "gray"
-	} else if game.HomeScore > game.AwayScore {
-		awayStyle = "gray"
-		homeStyle = "green"
-	} else {
-		awayStyle = "white"
-		homeStyle = "white"
-	}
 
-	awayOdds := ""
-	if game.AwaySpread != "" {
-		awayOdds = fmt.Sprintf("%s", game.AwaySpread)
-	}
-
-	homeOdds := ""
-	if game.HomeSpread != "" {
-		homeOdds = fmt.Sprintf("%s", game.HomeSpread)
-}
-	
-	oddsInfo := ""
-	if game.OverUnder != "" {
-		oddsInfo = fmt.Sprintf(" [blue]%s[-]", game.OverUnder)
-	}
-
-	fmt.Fprintf(scoreview, "  [%s]%s (%s) [%s] %d[-]  @ [%s]%d [%s] %s(%s) [-]  [gray]FINAL[-]%s\n", 
-		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, game.AwayScore, homeStyle, game.HomeScore, homeOdds, game.HomeTeam, game.HomeRecord,   oddsInfo)
-}
 
