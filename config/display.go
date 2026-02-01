@@ -192,3 +192,36 @@ func (d *Display) StartTicker(interval time.Duration) {
 		}
 	}()
 }
+
+func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
+	var awayStyle, homeStyle string
+	if game.AwayScore > game.HomeScore {
+		awayStyle = "green"
+		homeStyle = "gray"
+	} else if game.HomeScore > game.AwayScore {
+		awayStyle = "gray"
+		homeStyle = "green"
+	} else {
+		awayStyle = "white"
+		homeStyle = "white"
+	}
+
+	awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
+	homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
+
+	if game.AwaySpread != "" {
+		awayOdds = fmt.Sprintf("%s", awayOdds)
+	}
+
+	if game.HomeSpread != "" {
+		homeOdds = fmt.Sprintf("%s", homeOdds)
+	}
+	
+	oddsInfo := ""
+	if game.OverUnder != "" {
+		oddsInfo = fmt.Sprintf(" [blue]%s[-]", game.OverUnder)
+	}
+
+	fmt.Fprintf(scoreview, "  [%s]%s (%s) %s %d[-]  @ [%s]%d %s %s(%s) [-]  [gray]FINAL[-]%s\n", 
+		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, game.AwayScore, homeStyle, game.HomeScore, homeOdds, game.HomeTeam, game.HomeRecord,   oddsInfo)
+}
