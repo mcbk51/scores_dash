@@ -92,7 +92,7 @@ func (d *Display) UpdateScores() {
 			if !nextGameTime.IsZero() {
 				localTime := nextGameTime.Local()
 				// Output for next game
-				fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds, homeTeam, homeOdds, dateStr, localTime.Format("3:04 PM"))
+				fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s %s - %s at %s[-]\n", awayTeam, awayOdds,  homeOdds, homeTeam, dateStr, localTime.Format("3:04 PM"))
 			} 			
 
 			if len(finishedGames) > 0 {
