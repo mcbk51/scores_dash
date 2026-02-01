@@ -108,11 +108,14 @@ func (s *Scroller) Start(ctx context.Context, quitChan chan bool) {
 						}
 
 						maxScroll := max(totalLines-viewHeight)
-
 						newRow := row + dir
-						if dir > 0 && newRow < 0 {
+
+						if dir > 0 && newRow >= maxScroll {
+							newRow = 0
+						}else if dir < 0 && newRow <= 0 {
 							newRow = maxScroll
 						}
+
 						s.view.ScrollTo(newRow, col)
 					})
 				}
