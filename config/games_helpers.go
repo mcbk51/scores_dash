@@ -126,7 +126,7 @@ func IsUpcoming(startTime time.Time, duration time.Duration) bool {
 }
 
 func IsLive(status string) bool {
-	return status == "STATUS_IN_PROGRESS" || status == "In Progress" || status == "STATUS_HALFTIME" || status == "Halftime"
+	return status == "STATUS_IN_PROGRESS" || status == "In Progress" || status == "STATUS_HALFTIME" || status == "Halftime" || status == "End of Period"
 }
 
 func CountLiveGames(games []api.Game) int {

@@ -81,18 +81,12 @@ func (s *Scroller) ScrollDown() {
 
 func (s *Scroller) Start(ctx context.Context, quitChan chan bool) {
 	go func() {
-		resetTicker := time.NewTicker(time.Second * 100)
-		defer resetTicker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-quitChan:
 				return
-			case <-resetTicker.C:
-				s.app.QueueUpdateDraw(func() {
-					s.view.ScrollTo(0, 0)
-				})
 			default:
 				s.mu.Lock()
 				enabled := s.enabled
@@ -100,13 +94,26 @@ func (s *Scroller) Start(ctx context.Context, quitChan chan bool) {
 				dir := s.direction
 				s.mu.Unlock()
 
-				if !enabled {
+				if enabled {
 					s.app.QueueUpdateDraw(func() {
 						row, col := s.view.GetScrollOffset()
-						newRow := row + dir
-						if newRow >= 0 {
-							s.view.ScrollTo(newRow, col)
+						_, _, _, viewHeight := s.view.GetInnerRect()
+
+						text := s.view.GetText(false)
+						totalLines := 1
+						for _, c := range text {
+							if c == '\n' {
+								totalLines++
+							}
 						}
+
+						maxScroll := max(totalLines-viewHeight)
+
+						newRow := row + dir
+						if dir > 0 && newRow < 0 {
+							newRow = maxScroll
+						}
+						s.view.ScrollTo(newRow, col)
 					})
 				}
 				time.Sleep(speed)
