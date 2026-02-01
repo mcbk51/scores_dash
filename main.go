@@ -46,6 +46,7 @@ func main (){
 	scroller := config.NewScroller(app, scoreview)
 	scroller.Start(ctx, quitChan)
 
+	// Main output setup
 	display := config.NewDisplay(app, scoreview, scroller, ctx, quitChan)
 
 	// Handle signals
