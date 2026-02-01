@@ -148,10 +148,11 @@ func (d *Display) UpdateScores() {
 				awayInfo += fmt.Sprintf("[blue]%s[-]", awayOdds)
 			}
 
-			homeInfo := fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
+			homeInfo := ""
 			if game.HomeSpread != "" {
-				homeInfo += fmt.Sprintf("[blue]%s[-]", homeOdds)
+				homeInfo = fmt.Sprintf("[blue]%s[-] ", homeOdds)
 			}
+			homeInfo += fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
 
 			// Mian output for live games
 			fmt.Fprintf(d.view, " [-][blue]%s [white]%s [-][purple]%d  [white]@  [purple]%d [-]%s  [%s]{%s}[-]\n",
