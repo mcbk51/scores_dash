@@ -20,7 +20,7 @@ type Scroller struct {
 func NewScroller(app *tview.Application, view *tview.TextView) *Scroller {
 	return &Scroller{
 		enabled:   false,
-		speed:     time.Millisecond * 4000,
+		speed:     time.Millisecond * 3500,
 		direction: 1,
 		view:      view,
 		app:       app,
