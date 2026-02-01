@@ -57,8 +57,6 @@ func (d *Display) UpdateScores() {
 	d.view.Clear()
 	fmt.Fprintf(d.view, "[yellow]=== LIVE SPORTS SCORES ===[-]\n\n")
 	fmt.Fprintf(d.view, "[grey]Updated: %s| %s[-]\n", time.Now().Format("3:04 PM"), d.scroller.FormatStatus())
-	fmt.Fprintf(d.view, "[grey]'q' quit | 's' scroll | '+/-' speed | 'r' reverse | 'j/k' manual[-]\n\n")
-
 
 	//  Group by league
 	activeByLeague := make(map[string][]api.Game)
