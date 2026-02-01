@@ -20,7 +20,7 @@ type Scroller struct {
 func NewScroller(app *tview.Application, view *tview.TextView) *Scroller {
 	return &Scroller{
 		enabled:   false,
-		speed:     time.Millisecond * 100,
+		speed:     time.Millisecond * 4000,
 		direction: 1,
 		view:      view,
 		app:       app,
@@ -81,12 +81,18 @@ func (s *Scroller) ScrollDown() {
 
 func (s *Scroller) Start(ctx context.Context, quitChan chan bool) {
 	go func() {
+		resetTicker := time.NewTicker(time.Second * 100)
+		defer resetTicker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-quitChan:
 				return
+			case <-resetTicker.C:
+				s.app.QueueUpdateDraw(func() {
+					s.view.ScrollTo(0, 0)
+				})
 			default:
 				s.mu.Lock()
 				enabled := s.enabled
