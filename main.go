@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"sort"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/rivo/tview"
 	"github.com/gdamore/tcell/v2"
-	"github.com/mcbk51/scores_dash/api"
 	"github.com/mcbk51/scores_dash/config"
 )
 
@@ -44,6 +42,13 @@ func main (){
 		app.Stop()
 	}
 
+	// Scrolling
+	scroller := config.NewScroller(app, scoreview)
+	scroller.Start(ctx, quitChan)
+
+	display := config.NewDisplay(app, scoreview, scroller, ctx, quitChan)
+
+	// Handle signals
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -51,181 +56,51 @@ func main (){
 		quit()
 	}()
 
-	updateScores := func() {
-		select {
-		case <-quitChan:
-			return
-		case <-ctx.Done():
-			return
-		default:
-		}
-
-		games, err := api.GetGames("all", time.Now())
-		select {
-		case <-quitChan:
-			return
-		case <-ctx.Done():
-			return
-		default:
-		}
-
-
-		if err != nil {
-			scoreview.Clear()
-			fmt.Fprintf(scoreview, "[red]Error fetching scores: %v[-]\n", err)
-			app.Draw()
-			return
-		}
-
-		scoreview.Clear()
-		fmt.Fprintf(scoreview, "[yellow]=== LIVE SPORTS SCORES ===[-]\n\n")
-		fmt.Fprintf(scoreview, "[grey]Updated: %s | Press 'q' to quit[-]\n\n", time.Now().Format("3:04 PM"))
-
-		//  Group by league
-		activeByLeague := make(map[string][]api.Game)
-		allByLeague := make(map[string][]api.Game)
-
-		for _, game := range games {
-			allByLeague[game.League] = append(allByLeague[game.League], game)
-			if config.IsLive(game.Status) || config.IsUpcoming(game.StartTime, 30*time.Minute) {
-				activeByLeague[game.League] = append(activeByLeague[game.League], game)
-			}
-		}
-
-		leagueOrder := []string{"NFL", "NBA", "NHL", "MLB"}
-		leagueColors := map[string]string{
-			"NFL": "red",
-			"NBA": "blue",
-			"NHL": "orange",
-			"MLB": "green",
-		}
-
-		for _, league := range leagueOrder {
-			activeGames := activeByLeague[league]
-			AllLeagueGames := allByLeague[league]
-			finishedGames := config.GetFinishedGamesToday(AllLeagueGames)
-
-			// No Active Games
-			if len(activeGames) == 0 {
-				nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := config.FindNextGame(league)
-				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
-				fmt.Fprintf(scoreview, "  [gray]No games currently[-]\n")
-				if !nextGameTime.IsZero() {
-					localTime := nextGameTime.Local()
-					// Output for next game
-					fmt.Fprintf(scoreview, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds, homeTeam, homeOdds, dateStr, localTime.Format("3:04 PM"))
-				} 			
-
-				if len(finishedGames) > 0 {
-					fmt.Fprintf(scoreview, "[orange]── Finished Games Results ──[-]\n")
-					for _, game := range finishedGames {
-						config.PrintFinishedGames(scoreview, game)
-					}
-				}
-				fmt.Fprintf(scoreview, "\n")
-				continue
-			}
-
-			sort.Slice(activeGames, func(i, j int) bool {
-				statusI := config.IsLive(activeGames[i].Status)
-				statusJ := config.IsLive(activeGames[j].Status)
-				if statusI != statusJ {
-					return statusI
-				}
-				return activeGames[i].StartTime.Before(activeGames[j].StartTime)
-			})
-
-			liveCount := config.CountLiveGames(activeGames)
-			if liveCount > 0 {
-				fmt.Fprintf(scoreview, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
-			} else {
-				fmt.Fprintf(scoreview, "[%s]▼ %s[-]\n", leagueColors[league], league)
-			}
-
-			for _, game := range activeGames {
-				statusColor := "white"
-				statusText := game.Status
-				awayOdds := config.FormatOdds(game.AwaySpread, game.AwayOdds)
-				homeOdds := config.FormatOdds(game.HomeSpread, game.HomeOdds)
-
-				if config.IsLive(game.Status) {
-					statusColor = "green"
-					if game.Clock != "" && game.Period != "" {
-						statusText = fmt.Sprintf("%s - %s", game.Clock, game.Period)
-					} else {
-						statusText = "LIVE"
-					}
-				} else if config.IsUpcoming(game.StartTime, 30*time.Minute) {
-					statusColor = "yellow"
-					localTime := game.StartTime.Local()
-					minutesUntil := int(time.Until(game.StartTime).Minutes())
-					statusText = fmt.Sprintf("Starts in %dm (%s)", minutesUntil, localTime.Format("3:04 PM"))
-				} else {
-					continue
-				}
-
-				awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
-				if game.AwaySpread != "" {
-					awayInfo += fmt.Sprintf("[blue]%s[-]", awayOdds)
-				}
-
-				homeInfo := fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
-				if game.HomeSpread != "" {
-					homeInfo += fmt.Sprintf("[blue]%s[-]", homeOdds)
-				}
-
-				// Mian output for live games
-				fmt.Fprintf(scoreview, " [-][blue]%s [white]%s [-][purple]%d  [white]@  [purple]%d [-]%s  [%s]{%s}[-]\n",
-					game.OverUnder,
-					awayInfo,
-					game.AwayScore,
-					game.HomeScore,
-					homeInfo,
-					statusColor,
-					statusText)
-
-			}
-
-			if len(finishedGames) > 0 {
-				fmt.Fprintf(scoreview, "[orange]── Finished Games Results ──[-]\n")
-				for _, game := range finishedGames {
-					config.PrintFinishedGames(scoreview, game)
-				}
-			}
-
-			fmt.Fprintf(scoreview, "\n")
-		}
-					
-
-		app.Draw()
-	}
-
+	// Input Handling
 	scoreview.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlC || event.Key() == tcell.KeyEscape || event.Rune() == 'q' {
+		switch event.Key() {
+		case tcell.KeyCtrlC, tcell.KeyEscape:
 			quit()
 			return nil
 		}
+
+		switch event.Rune() {
+		case 'q':
+			quit()
+			return nil
+		case 's', 'S':
+			scroller.Toggle()
+			go display.UpdateScores()
+			return nil
+		case '+', '=':
+			scroller.SpeedUp()
+			go display.UpdateScores()
+			return nil
+		case '-', '_':
+			scroller.SlowDown()
+			go display.UpdateScores()
+			return nil
+		case 'r', 'R':
+			scroller.Reverse()
+			go display.UpdateScores()
+			return nil
+		case 'j':
+			scroller.ScrollDown()
+			return nil
+		case 'k':
+			scroller.ScrollUp()
+			return nil
+		}
+
 		return event
 	})
 
-	// Initial Load
-	go updateScores()
 
-	//Set up a ticker to update scores every 30 seconds
-	go func() {
-		ticker := time.NewTicker(time.Second * 30)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-quitChan:
-				return
-			case <-ticker.C:
-			  	go updateScores()
-			}
-		}
-	}()
+	// Initial Load
+	go display.UpdateScores()
+
+	// Refresh ticker
+	display.StartTicker(time.Second * 30)
 
 	if err := app.SetRoot(scoreview, true).Run(); err != nil {
 		os.Exit(0)
