@@ -11,10 +11,10 @@ import (
 )
 
 type Display struct {
-	app *tview.Application
-	view *tview.TextView
+	app  	 *tview.Application
+	view 	 *tview.TextView
     scroller *Scroller
-	ctx context.Context
+	ctx  	 context.Context
 	quitChan chan bool
 }
 
