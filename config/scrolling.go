@@ -130,7 +130,7 @@ func (s *Scroller) StatusString() string {
  	defer s.mu.Unlock()
 
 	if s.enabled {
-		return "[green]scroll: on (%dms)[-]"
+		return "[gray]scroll: on (%dms)[-]"
 	}
 	return "[gray]scroll: off[-]"
 }
@@ -145,7 +145,7 @@ func (s *Scroller) FormatStatus() string {
 		if s.direction < 0 {
 			dir = "↑"
 		}
-		return "[green]scroll: on " + dir + " (" + itoa(int(speedMs)) + "ms)[-]"
+		return "[gray]scroll: on " + dir + " (" + itoa(int(speedMs)) + "ms)[-]"
 	}
 	return "[gray]scroll: off[-]"
 }
