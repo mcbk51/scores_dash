@@ -68,7 +68,25 @@ func (d *Display) UpdateScores() {
 		}
 	}
 
-	leagueOrder := []string{"NFL", "NBA", "NHL", "MLB"}
+	// Sort leagues 
+	baseOrder := []string{"NFL", "NBA", "NHL", "MLB"}
+	leagueOrder := make([]string, 0, len(baseOrder))
+
+	leaguesWithGames := make([]string, 0)
+	leaguesWithoutGames := make([]string, 0)
+
+	for _, league := range baseOrder {
+		if len(allByLeague[league]) > 0 {
+			leaguesWithGames = append(leaguesWithGames, league)
+		} else {
+			leaguesWithoutGames = append(leaguesWithoutGames, league)
+		}
+	}
+
+	// Combine: leagues with games first, then leagues without games
+	leagueOrder = append(leagueOrder, leaguesWithGames...)
+	leagueOrder = append(leagueOrder, leaguesWithoutGames...)
+
 	leagueColors := map[string]string{
 		"NFL": "red",
 		"NBA": "blue",
