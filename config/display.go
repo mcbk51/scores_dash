@@ -84,8 +84,7 @@ func (d *Display) UpdateScores() {
 		// No Active Games
 		if len(activeGames) == 0 {
 			nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := FindNextGame(league)
-			fmt.Fprintf(d.view, "[%s]▼ %s[-]\n", leagueColors[league], league)
-			fmt.Fprintf(d.view, "  [gray]No games currently[-]\n")
+			fmt.Fprintf(d.view, "[%s]▼ %s[-][gray] No games currently[-]\n", leagueColors[league], league)
 			if !nextGameTime.IsZero() {
 				localTime := nextGameTime.Local()
 				// Output for next game
