@@ -61,7 +61,7 @@ func main (){
 	scoreview.SetInputCapture(config.NewInputHandler(scroller, display, quit))
 
 	// Initial Load
-	go display.UpdateScores()
+	go display.MainOutput()
 
 	// Refresh ticker
 	display.StartTicker(time.Second * 30)

@@ -19,19 +19,19 @@ func NewInputHandler(scroller *Scroller, display *Display, quit func()) func(eve
 			return nil
 		case 's', 'S':
 			scroller.Toggle()
-			go display.UpdateScores()
+			go display.MainOutput()
 			return nil
 		case '+', '=':
 			scroller.SpeedUp()
-			go display.UpdateScores()
+			go display.MainOutput()
 			return nil
 		case '-', '_':
 			scroller.SlowDown()
-			go display.UpdateScores()
+			go display.MainOutput()
 			return nil
 		case 'r', 'R':
 			scroller.Reverse()
-			go display.UpdateScores()
+			go display.MainOutput()
 			return nil
 		case 'j':
 			scroller.ScrollDown()

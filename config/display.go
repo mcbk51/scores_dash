@@ -28,7 +28,7 @@ func NewDisplay(app *tview.Application, view *tview.TextView, scroller *Scroller
 	}
 }
 
-func (d *Display) UpdateScores() {
+func (d *Display) MainOutput() {
 	select {
 	case <-d.quitChan:
 		return
@@ -55,7 +55,7 @@ func (d *Display) UpdateScores() {
 	}
 
 	d.view.Clear()
-	fmt.Fprintf(d.view, "[yellow]=== LIVE SPORTS SCORES ===[-] [grey]Updated: %s| %s[-]\n", time.Now().Format("3:04 PM"), d.scroller.FormatStatus())
+	fmt.Fprintf(d.view, "[yellow]=== Scores Dash ===[-] [grey]Updated: %s| %s[-]\n", time.Now().Format("3:04 PM"), d.scroller.FormatStatus())
 
 	//  Group by league
 	activeByLeague := make(map[string][]api.Game)
@@ -202,7 +202,7 @@ func (d *Display) StartTicker(interval time.Duration) {
 			case <-d.quitChan:
 				return
 			case <-ticker.C:
-			  	go d.UpdateScores()
+			  	go d.MainOutput()
 			}
 		}
 	}()
