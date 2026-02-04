@@ -45,8 +45,6 @@ func (d *Display) MainOutput() {
 		return
 	default:
 	}
-
-
 	if err != nil {
 		d.view.Clear()
 		fmt.Fprintf(d.view, "[red]Error fetching scores: %v[-]\n", err)
