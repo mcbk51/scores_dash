@@ -206,6 +206,31 @@ func (d *Display) StartTicker(interval time.Duration) {
 	}()
 }
 
+func checkOverUnderResult(game api.Game) string {
+	if game.OverUnder == "" {
+		return ""
+	}
+
+	// Parse the over/under value from the format "O/U 45.5"
+	var ouValue float64
+	_, err := fmt.Sscanf(game.OverUnder, "O/U %f", &ouValue)
+	if err != nil {
+		return ""
+	}
+
+	totalScore := float64(game.HomeScore + game.AwayScore)
+
+	if totalScore > ouValue {
+		return "[green]OVER[-]"
+	} else if totalScore < ouValue {
+		return "[green]UNDER[-]"
+	}
+
+	// Push (exact match)
+	return "[yellow]PUSH[-]"
+}
+
+
 func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 	var awayStyle, homeStyle string
 	if game.AwayScore > game.HomeScore {
@@ -231,8 +256,9 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 	}
 	
 	oddsInfo := ""
+	overUnderResult := checkOverUnderResult(game)
 	if game.OverUnder != "" {
-		oddsInfo = fmt.Sprintf(" [blue]%s[-]", game.OverUnder)
+		oddsInfo = fmt.Sprintf(" [blue]%s %s[-]", game.OverUnder, overUnderResult)
 	}
 
 	fmt.Fprintf(scoreview, "  [%s]%s (%s) %s %d[-]  @ [%s]%d %s %s(%s) [-]  [gray]FINAL[-]%s\n", 
