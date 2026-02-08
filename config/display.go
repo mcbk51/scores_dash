@@ -222,7 +222,7 @@ func checkSpreadIfHomeWin(game api.Game) string {
 			if gameSpread > int(-spreadValue) {
 				return "[green]✓[-]"
 			} else if gameSpread == int(-spreadValue) {
-				return "[yellow]PUSH[-]"
+				return "[yellow]P[-]"
 			} else {
 				return "[red]✗[-]"
 			}
@@ -250,7 +250,7 @@ func checkSpreadIfAwayWin(game api.Game) string {
 			if gameSpread > int(-spreadValue) {
 				return "[green]✓[-]"
 			} else if gameSpread == int(-spreadValue) {
-				return "[yellow]PUSH[-]"
+				return "[yellow]P[-]"
 			} else {
 				return "[red]✗[-]"
 			}
@@ -278,13 +278,13 @@ func checkOverUnderResult(game api.Game) string {
 	totalScore := float64(game.HomeScore + game.AwayScore)
 
 	if totalScore > ouValue {
-		return "[green]↑O[-]"
+		return "[green]↑[-]"
 	} else if totalScore < ouValue {
-		return "[green]↓U[-]"
+		return "[green]↓[-]"
 	}
 
 	// Push (exact match)
-	return "[yellow]PUSH[-]"
+	return "[yellow]P[-]"
 }
 
 
@@ -321,5 +321,5 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 	}
 
 	fmt.Fprintf(scoreview, "  [%s]%s (%s) %s %s [%s]%d[-]  @ [%s]%d %s %s [%s]%s(%s) [-]  [gray]FINAL[-]%s\n", 
-		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, awaySpreadResult, awayStyle, game.AwayScore, homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord,   oddsInfo)
+		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, awaySpreadResult, awayStyle, game.AwayScore, homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord, oddsInfo)
 }
