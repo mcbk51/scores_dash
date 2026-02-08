@@ -320,6 +320,6 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 		oddsInfo = fmt.Sprintf(" [blue]%s %s[-]", game.OverUnder, overUnderResult)
 	}
 
-	fmt.Fprintf(scoreview, "  [%s]%s(%s) %s [%s]%s %d[-]  @ [%s]%d %s %s [%s]%s(%s) [-]  [gray]FINAL[-]%s\n", 
+	fmt.Fprintf(scoreview, "  [%s]%s(%s) %s [%s]%s %d[-]  @ [%s]%d %s %s [%s]%s(%s) [-]%s\n", 
 		awayStyle, game.AwayTeam, game.AwayRecord,  awaySpreadResult, awayStyle, awayOdds, game.AwayScore, homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord, oddsInfo)
 }
