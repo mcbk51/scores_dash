@@ -206,7 +206,7 @@ func (d *Display) StartTicker(interval time.Duration) {
 	}()
 }
 
-func checkSpreadifHomeWin(game api.Game) string {
+func checkSpreadIfHomeWin(game api.Game) string {
 	if game.HomeSpread == "" {
 		return ""
 	}
@@ -234,7 +234,7 @@ func checkSpreadifHomeWin(game api.Game) string {
 	return ""
 }
 
-func checkSpreadifAwayWin(game api.Game) string {
+func checkSpreadIfAwayWin(game api.Game) string {
 	if game.AwaySpread == "" {
 		return ""
 	}
@@ -302,9 +302,9 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 	}
 
 	awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
-	awaySpreadResult := checkSpreadifAwayWin(game)
+	awaySpreadResult := checkSpreadIfAwayWin(game)
 	homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
-	homeSpreadResult := checkSpreadifHomeWin(game)
+	homeSpreadResult := checkSpreadIfHomeWin(game)
 
 	if game.AwaySpread != "" {
 		awayOdds = fmt.Sprintf("%s", awayOdds)
