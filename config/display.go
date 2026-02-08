@@ -206,6 +206,63 @@ func (d *Display) StartTicker(interval time.Duration) {
 	}()
 }
 
+func checkSpreadifHomeWin(game api.Game) string {
+	if game.HomeSpread == "" {
+		return ""
+	}
+
+	var spreadValue float64
+	fmt.Sscanf(game.HomeSpread, "%f", &spreadValue)
+	gameSpread := game.HomeScore - game.AwayScore
+
+	if game.HomeScore > game.AwayScore {
+		// Home team won
+		if spreadValue < 0 {
+			// Home was favored (negative spread), they need to win by more than the spread
+			if gameSpread > int(-spreadValue) {
+				return "[green]✓[-]"
+			} else if gameSpread == int(-spreadValue) {
+				return "[yellow]PUSH[-]"
+			} else {
+				return "[red]✗[-]"
+			}
+		} else {
+			// Home was underdog (positive spread), they just need to win
+			return "[green]✓[-]"
+		}
+	}
+	return ""
+}
+
+func checkSpreadifAwayWin(game api.Game) string {
+	if game.AwaySpread == "" {
+		return ""
+	}
+
+	var spreadValue float64
+	fmt.Sscanf(game.AwaySpread, "%f", &spreadValue)
+	gameSpread := game.AwayScore - game.HomeScore
+
+	if game.AwayScore > game.HomeScore {
+		// Away team won
+		if spreadValue < 0 {
+			// Away was favored (negative spread), they need to win by more than the spread
+			if gameSpread > int(-spreadValue) {
+				return "[green]✓[-]"
+			} else if gameSpread == int(-spreadValue) {
+				return "[yellow]PUSH[-]"
+			} else {
+				return "[red]✗[-]"
+			}
+		} else {
+			// Away was underdog (positive spread), they just need to win
+			return "[green]✓[-]"
+		}
+	}
+	return ""
+}
+
+
 func checkOverUnderResult(game api.Game) string {
 	if game.OverUnder == "" {
 		return ""
@@ -221,9 +278,9 @@ func checkOverUnderResult(game api.Game) string {
 	totalScore := float64(game.HomeScore + game.AwayScore)
 
 	if totalScore > ouValue {
-		return "[green]OVER[-]"
+		return "[green]↑O[-]"
 	} else if totalScore < ouValue {
-		return "[green]UNDER[-]"
+		return "[green]↓U[-]"
 	}
 
 	// Push (exact match)
@@ -245,7 +302,9 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 	}
 
 	awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
+	awaySpreadResult := checkSpreadifAwayWin(game)
 	homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
+	homeSpreadResult := checkSpreadifHomeWin(game)
 
 	if game.AwaySpread != "" {
 		awayOdds = fmt.Sprintf("%s", awayOdds)
@@ -261,6 +320,6 @@ func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
 		oddsInfo = fmt.Sprintf(" [blue]%s %s[-]", game.OverUnder, overUnderResult)
 	}
 
-	fmt.Fprintf(scoreview, "  [%s]%s (%s) %s %d[-]  @ [%s]%d %s %s(%s) [-]  [gray]FINAL[-]%s\n", 
-		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, game.AwayScore, homeStyle, game.HomeScore, homeOdds, game.HomeTeam, game.HomeRecord,   oddsInfo)
+	fmt.Fprintf(scoreview, "  [%s]%s (%s) %s %s [%s]%d[-]  @ [%s]%d %s %s [%s]%s(%s) [-]  [gray]FINAL[-]%s\n", 
+		awayStyle, game.AwayTeam, game.AwayRecord, awayOdds, awaySpreadResult, awayStyle, game.AwayScore, homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord,   oddsInfo)
 }
