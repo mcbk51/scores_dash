@@ -113,7 +113,6 @@ func (d *Display) MainOutput() {
 					PrintFinishedGames(d.view, game)
 				}
 			}
-			fmt.Fprintf(d.view, "\n")
 			continue
 		}
 
