@@ -35,7 +35,7 @@ func FindNextGame(league string) (time.Time, string, string, string, string, str
 			dateStr  := formatGameDate(games[0].StartTime)
 			awayOdds := FormatOdds(games[0].AwaySpread, games[0].AwayOdds)
 			homeOdds := FormatOdds(games[0].HomeSpread, games[0].HomeOdds)
-			return games[0].StartTime,games[0].AwayTeam, games[0].HomeTeam,  dateStr, awayOdds,homeOdds
+			return games[0].StartTime,games[0].AwayTeam, games[0].HomeTeam,  dateStr, awayOdds, homeOdds
 		}
 	}
 	return time.Time{}, "", "", "", "", ""
@@ -61,7 +61,7 @@ func formatGameDate(t time.Time) string {
 	}
 
 	tomorrow := now.AddDate(0, 0, 1)
-	if gameDate.Year() == tomorrow.Year() && gameDate.Month() == tomorrow.Month() && gameDate.Day() == tomorrow.Day() {
+	if gameDate.Year() == now.Year() && gameDate.Month() == now.Month() && gameDate.Day() == tomorrow.Day() {
 		return "Tomorrow"
 	}
 
