@@ -138,12 +138,11 @@ func (d *Display) MainOutput() {
 
 			if IsLive(game.Status) {
 				statusColor = "green"
+				statusText = "LIVE"
 				if game.Clock != "" && game.Period != "" {
 					statusText = fmt.Sprintf("%s - %s", game.Clock, game.Period)
-				} else {
-					statusText = "LIVE"
 				}
-			} else if IsUpcoming(game.StartTime, 30*time.Minute) {
+			} else if IsUpcoming(game.StartTime, 45*time.Minute) {
 				statusColor = "yellow"
 				localTime := game.StartTime.Local()
 				minutesUntil := int(time.Until(game.StartTime).Minutes())
