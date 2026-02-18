@@ -104,7 +104,7 @@ func (d *Display) MainOutput() {
 			if !nextGameTime.IsZero() {
 				localTime := nextGameTime.Local()
 				// Output for next game
-				fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s %s - %s at %s[-]\n", awayTeam, awayOdds,  homeOdds, homeTeam, dateStr, localTime.Format("3:04 PM"))
+				fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds,  homeOdds, homeTeam, dateStr, localTime.Format("3:04 PM"))
 			} 			
 
 			if len(finishedGames) > 0 {
@@ -128,8 +128,6 @@ func (d *Display) MainOutput() {
 		liveCount := CountLiveGames(activeGames)
 		if liveCount > 0 {
 			fmt.Fprintf(d.view, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
-		} else {
-			fmt.Fprintf(d.view, "[%s]▼ %s[-]\n", leagueColors[league], league)
 		}
 
 		for _, game := range activeGames {
