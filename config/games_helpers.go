@@ -56,7 +56,7 @@ func formatGameDate(t time.Time) string {
 	now := time.Now()
 	gameDate := t.Local()
 
-	if gameDate.Year() == now.Year() && gameDate.Year() == now.YearDay() {
+	if gameDate.Year() == now.Year() && gameDate.Month() == now.Month() && gameDate.Day() == now.Day() {
 		return "Today"
 	}
 
