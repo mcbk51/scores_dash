@@ -55,13 +55,14 @@ func FormatOdds(spread string, moneyline string) string {
 func formatGameDate(t time.Time) string {
 	now := time.Now()
 	gameDate := t.Local()
-
-	if gameDate.Year() == now.Year() && gameDate.Month() == now.Month() && gameDate.Day() == now.Day() {
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	game := time.Date(gameDate.Year(), gameDate.Month(), gameDate.Day(), 0, 0, 0, 0, gameDate.Location())
+	
+	if game.Equal(today) {
 		return "Today"
 	}
 
-	tomorrow := now.AddDate(0, 0, 1)
-	if gameDate.Year() == now.Year() && gameDate.Month() == now.Month() && gameDate.Day() == tomorrow.Day() {
+	if game.Equal(today.AddDate(0, 0, 1)) {
 		return "Tomorrow"
 	}
 
