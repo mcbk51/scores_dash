@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"strconv"
 
 	"github.com/mcbk51/scores_dash/api"
 	"github.com/rivo/tview"
@@ -202,62 +203,41 @@ func (d *Display) StartTicker(interval time.Duration) {
 	}()
 }
 
-func checkSpreadIfHomeWin(game api.Game) string {
-	if game.HomeSpread == "" {
+func spreadResult(spread string, scoreDiff int, teamWon bool) string {
+	if spread == "" || !teamWon {
 		return ""
 	}
 
-	var spreadValue float64
-	fmt.Sscanf(game.HomeSpread, "%f", &spreadValue)
-	gameSpread := game.HomeScore - game.AwayScore
-
-	if game.HomeScore > game.AwayScore {
-		// Home team won
-		if spreadValue < 0 {
-			// Home was favored (negative spread), they need to win by more than the spread
-			if gameSpread > int(-spreadValue) {
-				return "[green]✓[-]"
-			} else if gameSpread == int(-spreadValue) {
-				return "[yellow]P[-]"
-			} else {
-				return "[red]✗[-]"
-			}
-		} else {
-			// Home was underdog (positive spread), they just need to win
-			return "[green]✓[-]"
-		}
+	spreadValue, err := strconv.ParseFloat(spread, 64)
+	if err != nil {
+		return ""
 	}
-	return ""
+
+	if spreadValue > 0 {
+		return "[green]✓[-]"
+	}
+
+	scoreDiffFloat := float64(scoreDiff)
+	needed := -spreadValue
+	switch {
+	case scoreDiffFloat > needed:
+		return "[green]✓[-]"
+	case scoreDiffFloat == needed:
+		return "[yellow]P[-]"
+	default:
+		return "[red]✗[-]"
+	}
 }
+
+
+func checkSpreadIfHomeWin(game api.Game) string {
+	return spreadResult(game.HomeSpread, game.HomeScore - game.AwayScore, game.HomeScore > game.AwayScore)
+}
+
 
 func checkSpreadIfAwayWin(game api.Game) string {
-	if game.AwaySpread == "" {
-		return ""
-	}
-
-	var spreadValue float64
-	fmt.Sscanf(game.AwaySpread, "%f", &spreadValue)
-	gameSpread := game.AwayScore - game.HomeScore
-
-	if game.AwayScore > game.HomeScore {
-		// Away team won
-		if spreadValue < 0 {
-			// Away was favored (negative spread), they need to win by more than the spread
-			if gameSpread > int(-spreadValue) {
-				return "[green]✓[-]"
-			} else if gameSpread == int(-spreadValue) {
-				return "[yellow]P[-]"
-			} else {
-				return "[red]✗[-]"
-			}
-		} else {
-			// Away was underdog (positive spread), they just need to win
-			return "[green]✓[-]"
-		}
-	}
-	return ""
+	return spreadResult(game.AwaySpread, game.AwayScore - game.HomeScore, game.AwayScore > game.HomeScore)
 }
-
 
 func checkOverUnderResult(game api.Game) string {
 	if game.OverUnder == "" {
