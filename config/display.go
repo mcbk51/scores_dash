@@ -11,11 +11,20 @@ import (
 	"github.com/rivo/tview"
 )
 
+var leagueColors = map[string]string{
+	"NFL": "red",
+	"NBA": "blue",
+	"NHL": "orange",
+	"MLB": "green",
+}
+
+var leagueOrder = []string{"NFL", "NBA", "NHL", "MLB"}
+
 type Display struct {
-	app  	 *tview.Application
-	view 	 *tview.TextView
-    scroller *Scroller
-	ctx  	 context.Context
+	app      *tview.Application
+	view     *tview.TextView
+	scroller *Scroller
+	ctx      context.Context
 	quitChan chan bool
 }
 
@@ -29,22 +38,25 @@ func NewDisplay(app *tview.Application, view *tview.TextView, scroller *Scroller
 	}
 }
 
-func (d *Display) MainOutput() {
+func (d *Display) cancelled() bool {
 	select {
 	case <-d.quitChan:
-		return
+		return true
 	case <-d.ctx.Done():
-		return
+		return true
 	default:
+		return false
+	}
+}
+
+func (d *Display) MainOutput() {
+	if d.cancelled() {
+		return
 	}
 
 	games, err := api.GetGames("all", time.Now())
-	select {
-	case <-d.quitChan:
+	if d.cancelled() {
 		return
-	case <-d.ctx.Done():
-		return
-	default:
 	}
 	if err != nil {
 		d.view.Clear()
@@ -53,136 +65,87 @@ func (d *Display) MainOutput() {
 		return
 	}
 
+	activeByLeague, allByLeague := groupGamesByLeague(games)
+	sortedLeagues := sortLeaguesByActivity(allByLeague)
+
 	d.view.Clear()
 	fmt.Fprintf(d.view, "[yellow]=== Scores Dash ===[-] [grey]Updated: %s| %s[-]\n", time.Now().Format("3:04 PM"), d.scroller.FormatStatus())
 
-	//  Group by league
-	activeByLeague := make(map[string][]api.Game)
-	allByLeague := make(map[string][]api.Game)
-
-	for _, game := range games {
-		allByLeague[game.League] = append(allByLeague[game.League], game)
-		if IsLive(game.Status) || IsUpcoming(game.StartTime, 30*time.Minute) {
-			activeByLeague[game.League] = append(activeByLeague[game.League], game)
-		}
-	}
-
-	// Sort leagues 
-	baseOrder := []string{"NFL", "NBA", "NHL", "MLB"}
-	leagueOrder := make([]string, 0, len(baseOrder))
-
-	leaguesWithGames := make([]string, 0)
-	leaguesWithoutGames := make([]string, 0)
-
-	for _, league := range baseOrder {
-		if len(allByLeague[league]) > 0 {
-			leaguesWithGames = append(leaguesWithGames, league)
-		} else {
-			leaguesWithoutGames = append(leaguesWithoutGames, league)
-		}
-	}
-
-	// Combine: leagues with games first, then leagues without games
-	leagueOrder = append(leagueOrder, leaguesWithGames...)
-	leagueOrder = append(leagueOrder, leaguesWithoutGames...)
-
-	leagueColors := map[string]string{
-		"NFL": "red",
-		"NBA": "blue",
-		"NHL": "orange",
-		"MLB": "green",
-	}
-
-	for _, league := range leagueOrder {
+	for _, league := range sortedLeagues {
 		activeGames := activeByLeague[league]
-		AllLeagueGames := allByLeague[league]
-		finishedGames := GetFinishedGamesToday(AllLeagueGames)
+		allGames := allByLeague[league]
+
+		finishedGames := GetFinishedGamesToday(allGames)
+		color := leagueColors[league]
 
 		// No Active Games
 		if len(activeGames) == 0 {
-			nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := FindNextGame(league)
-			fmt.Fprintf(d.view, "[%s]▼ %s[-][gray] No games currently[-]\n", leagueColors[league], league)
-			if !nextGameTime.IsZero() {
-				localTime := nextGameTime.Local()
-				// Output for next game
-				fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds,  homeOdds, homeTeam, dateStr, localTime.Format("3:04 PM"))
-			} 			
-
-			if len(finishedGames) > 0 {
-				fmt.Fprintf(d.view, "[orange]── Finished Games Results ──[-]\n")
-				for _, game := range finishedGames {
-					PrintFinishedGames(d.view, game)
-				}
-			}
+			d.renderNoLiveGames(league, color, finishedGames)
 			continue
 		}
-
-		sort.Slice(activeGames, func(i, j int) bool {
-			statusI := IsLive(activeGames[i].Status)
-			statusJ := IsLive(activeGames[j].Status)
-			if statusI != statusJ {
-				return statusI
-			}
-			return activeGames[i].StartTime.Before(activeGames[j].StartTime)
-		})
-
-		liveCount := CountLiveGames(activeGames)
-		if liveCount > 0 {
-			fmt.Fprintf(d.view, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", leagueColors[league], league, liveCount)
-		}
-
-		for _, game := range activeGames {
-			statusColor := "white"
-			statusText := game.Status
-			awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
-			homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
-
-			if IsLive(game.Status) {
-				statusColor = "green"
-				statusText = "LIVE"
-				if game.Clock != "" && game.Period != "" {
-					statusText = fmt.Sprintf("%s - %s", game.Clock, game.Period)
-				}
-			} else if IsUpcoming(game.StartTime, 45*time.Minute) {
-				statusColor = "yellow"
-				localTime := game.StartTime.Local()
-				minutesUntil := int(time.Until(game.StartTime).Minutes())
-				statusText = fmt.Sprintf("Starts in %dm (%s)", minutesUntil, localTime.Format("3:04 PM"))
-			} else {
-				continue
-			}
-
-			awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
-			if game.AwaySpread != "" {
-				awayInfo += fmt.Sprintf("[blue]%s[-]", awayOdds)
-			}
-
-			homeInfo := ""
-			if game.HomeSpread != "" {
-				homeInfo = fmt.Sprintf("[blue]%s[-] ", homeOdds)
-			}
-			homeInfo += fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
-
-			// Mian output for live games
-			fmt.Fprintf(d.view, " [-][blue]%s [white]%s [-][purple]%d  [white]@  [purple]%d [-]%s  [%s]{%s}[-]\n",
-				game.OverUnder,
-				awayInfo,
-				game.AwayScore,
-				game.HomeScore,
-				homeInfo,
-				statusColor,
-				statusText)
-
-		}
-
-		if len(finishedGames) > 0 {
-			fmt.Fprintf(d.view, "[orange]── Finished Games Results ──[-]\n")
-			for _, game := range finishedGames {
-				PrintFinishedGames(d.view, game)
-			}
-		}
-
+		sortGamesByStatus(activeGames)
+		d.renderLiveGames(league, color, activeGames)
+		d.renderFinishedGames(finishedGames)
 		fmt.Fprintf(d.view, "\n")
+	}
+}
+
+func (d *Display) renderNoLiveGames(league, color string, finishedGames []api.Game){
+	fmt.Fprintf(d.view, "[%s]▼ %s[-][gray] No games currently[-]\n", color, league)
+
+	nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := FindNextGame(league)
+	if !nextGameTime.IsZero() {
+		localTime := nextGameTime.Local()
+		// Output for next game
+		fmt.Fprintf(d.view, "  [gray]Next game: %s%s @ %s%s - %s at %s[-]\n", awayTeam, awayOdds,  homeOdds, homeTeam, dateStr, localTime.Format("3:04 PM"))
+	}
+	d.renderFinishedGames(finishedGames)
+}
+
+func (d *Display) renderLiveGames(league,color string, games []api.Game) {
+	liveCount := CountLiveGames(games)
+
+	if liveCount > 0 {
+		fmt.Fprintf(d.view, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", color, league, liveCount)
+	}
+
+	for _, game := range games {
+		statusColor, statusText := formatGameStatus(game)
+		if statusColor == "" {
+			continue
+		}
+		awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
+		homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
+
+		awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
+		if game.AwaySpread != "" {
+			awayInfo += fmt.Sprintf("[blue]%s[-]", awayOdds)
+		}
+
+		homeInfo := ""
+		if game.HomeSpread != "" {
+			homeInfo = fmt.Sprintf("[blue]%s[-] ", homeOdds)
+		}
+		homeInfo += fmt.Sprintf("%s (%s)", game.HomeTeam, game.HomeRecord)
+
+		fmt.Fprintf(d.view, " [-][blue]%s [white]%s [-][purple]%d  [white]@  [purple]%d [-]%s  [%s]{%s}[-]\n",
+			game.OverUnder,
+			awayInfo,
+			game.AwayScore,
+			game.HomeScore,
+			homeInfo,
+			statusColor,
+			statusText)
+	}
+}
+
+func (d *Display) renderFinishedGames(games []api.Game) {
+	if len(games) == 0 {
+		return
+	}
+	fmt.Fprintf(d.view, "[orange]── Finished Games Results ──[-]\n")
+	for _, game := range games {
+		PrintFinishedGames(d.view, game)
 	}
 }
 
@@ -202,6 +165,64 @@ func (d *Display) StartTicker(interval time.Duration) {
 		}
 	}()
 }
+
+// helper functions
+func groupGamesByLeague(games []api.Game) (map[string][]api.Game, map[string][]api.Game) {
+	active := make(map[string][]api.Game)
+	all := make(map[string][]api.Game)
+	for _, game := range games {
+		all[game.League] = append(all[game.League], game)
+		if IsLive(game.Status) || IsUpcoming(game.StartTime, 30*time.Minute) {
+			active[game.League] = append(active[game.League], game)
+		}
+	}
+	return active, all
+}
+
+func sortLeaguesByActivity(allByLeague map[string][]api.Game) []string {
+	withGames := make([]string, 0, len(leagueOrder))
+	withoutGames := make([]string, 0, len(leagueOrder))
+	for _, league := range leagueOrder {
+		if len(allByLeague[league]) > 0 {
+			withGames = append(withGames, league)
+		} else {
+			withoutGames = append(withoutGames, league)
+		}
+	}
+	return append(withGames, withoutGames...)
+}
+
+func sortGamesByStatus(games []api.Game) []api.Game {
+	sort.Slice(games, func(i, j int) bool {
+		liveI := IsLive(games[i].Status)
+		liveJ := IsLive(games[j].Status)
+		if liveI != liveJ {
+			return liveI
+		}
+		return games[i].StartTime.Before(games[j].StartTime)
+	})
+	return games
+}
+
+func formatGameStatus(game api.Game) (color, text string) {
+	switch {
+	case IsLive(game.Status):
+		text = "LIVE"
+		if game.Clock != "" && game.Period != "" {
+			text = fmt.Sprintf("%s - %s", game.Clock, game.Period)
+		}
+		return "green", text
+
+	case IsUpcoming(game.StartTime, 45*time.Minute):
+		localTime := game.StartTime.Local()
+		minutesUntil := int(time.Until(game.StartTime).Minutes())
+		text = fmt.Sprintf("Starts in %dm (%s)", minutesUntil, localTime.Format("3:04 PM"))
+		return "yellow", text
+	default:
+		return "", ""
+	}
+}
+
 
 func spreadResult(spread string, scoreDiff int, teamWon bool) string {
 	if spread == "" || !teamWon {
@@ -265,16 +286,12 @@ func checkOverUnderResult(game api.Game) string {
 
 
 func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
-	var awayStyle, homeStyle string
-	if game.AwayScore > game.HomeScore {
-		awayStyle = "green"
-		homeStyle = "gray"
-	} else if game.HomeScore > game.AwayScore {
-		awayStyle = "gray"
-		homeStyle = "green"
-	} else {
-		awayStyle = "white"
-		homeStyle = "white"
+	awayStyle, homeStyle := "white", "white"
+	switch {
+	case game.AwayScore > game.HomeScore:
+		awayStyle, homeStyle = "green", "gray"
+	case game.HomeScore > game.AwayScore:
+		awayStyle, homeStyle = "gray", "green"
 	}
 
 	awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
