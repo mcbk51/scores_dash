@@ -145,7 +145,7 @@ func (d *Display) renderFinishedGames(games []api.Game) {
 	}
 	fmt.Fprintf(d.view, "[orange]── Finished Games Results ──[-]\n")
 	for _, game := range games {
-		PrintFinishedGames(d.view, game)
+		printFinishedGames(d.view, game)
 	}
 }
 
@@ -285,7 +285,7 @@ func checkOverUnderResult(game api.Game) string {
 }
 
 
-func PrintFinishedGames(scoreview *tview.TextView, game api.Game) {
+func printFinishedGames(scoreview *tview.TextView, game api.Game) {
 	awayStyle, homeStyle := "white", "white"
 	switch {
 	case game.AwayScore > game.HomeScore:
