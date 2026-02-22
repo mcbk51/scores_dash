@@ -75,7 +75,7 @@ func (d *Display) MainOutput() {
 		activeGames := activeByLeague[league]
 		allGames := allByLeague[league]
 
-		finishedGames := GetFinishedGamesToday(allGames)
+		finishedGames := getFinishedGamesToday(allGames)
 		color := leagueColors[league]
 
 		// No Active Games
@@ -93,7 +93,7 @@ func (d *Display) MainOutput() {
 func (d *Display) renderNoLiveGames(league, color string, finishedGames []api.Game){
 	fmt.Fprintf(d.view, "[%s]▼ %s[-][gray] No games currently[-]\n", color, league)
 
-	nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := FindNextGame(league)
+	nextGameTime, awayTeam, homeTeam, dateStr, awayOdds, homeOdds := findNextGame(league)
 	if !nextGameTime.IsZero() {
 		localTime := nextGameTime.Local()
 		// Output for next game
@@ -103,7 +103,7 @@ func (d *Display) renderNoLiveGames(league, color string, finishedGames []api.Ga
 }
 
 func (d *Display) renderLiveGames(league,color string, games []api.Game) {
-	liveCount := CountLiveGames(games)
+	liveCount := countLiveGames(games)
 
 	if liveCount > 0 {
 		fmt.Fprintf(d.view, "[%s]▼ %s[-] [green]● %d LIVE[-]\n", color, league, liveCount)
@@ -114,8 +114,8 @@ func (d *Display) renderLiveGames(league,color string, games []api.Game) {
 		if statusColor == "" {
 			continue
 		}
-		awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
-		homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
+		awayOdds := formatOdds(game.AwaySpread, game.AwayOdds)
+		homeOdds := formatOdds(game.HomeSpread, game.HomeOdds)
 
 		awayInfo := fmt.Sprintf("%s (%s)", game.AwayTeam, game.AwayRecord)
 		if game.AwaySpread != "" {
@@ -172,7 +172,7 @@ func groupGamesByLeague(games []api.Game) (map[string][]api.Game, map[string][]a
 	all := make(map[string][]api.Game)
 	for _, game := range games {
 		all[game.League] = append(all[game.League], game)
-		if IsLive(game.Status) || IsUpcoming(game.StartTime, 30*time.Minute) {
+		if isLive(game.Status) || isUpcoming(game.StartTime, 30*time.Minute) {
 			active[game.League] = append(active[game.League], game)
 		}
 	}
@@ -194,8 +194,8 @@ func sortLeaguesByActivity(allByLeague map[string][]api.Game) []string {
 
 func sortGamesByStatus(games []api.Game) []api.Game {
 	sort.Slice(games, func(i, j int) bool {
-		liveI := IsLive(games[i].Status)
-		liveJ := IsLive(games[j].Status)
+		liveI := isLive(games[i].Status)
+		liveJ := isLive(games[j].Status)
 		if liveI != liveJ {
 			return liveI
 		}
@@ -206,14 +206,14 @@ func sortGamesByStatus(games []api.Game) []api.Game {
 
 func formatGameStatus(game api.Game) (color, text string) {
 	switch {
-	case IsLive(game.Status):
+	case isLive(game.Status):
 		text = "LIVE"
 		if game.Clock != "" && game.Period != "" {
 			text = fmt.Sprintf("%s - %s", game.Clock, game.Period)
 		}
 		return "green", text
 
-	case IsUpcoming(game.StartTime, 45*time.Minute):
+	case isUpcoming(game.StartTime, 45*time.Minute):
 		localTime := game.StartTime.Local()
 		minutesUntil := int(time.Until(game.StartTime).Minutes())
 		text = fmt.Sprintf("Starts in %dm (%s)", minutesUntil, localTime.Format("3:04 PM"))
@@ -294,9 +294,9 @@ func printFinishedGames(scoreview *tview.TextView, game api.Game) {
 		awayStyle, homeStyle = "gray", "green"
 	}
 
-	awayOdds := FormatOdds(game.AwaySpread, game.AwayOdds)
+	awayOdds := formatOdds(game.AwaySpread, game.AwayOdds)
 	awaySpreadResult := checkSpreadIfAwayWin(game)
-	homeOdds := FormatOdds(game.HomeSpread, game.HomeOdds)
+	homeOdds := formatOdds(game.HomeSpread, game.HomeOdds)
 	homeSpreadResult := checkSpreadIfHomeWin(game)
 
 	if game.AwaySpread != "" {
@@ -314,5 +314,6 @@ func printFinishedGames(scoreview *tview.TextView, game api.Game) {
 	}
 
 	fmt.Fprintf(scoreview, "  [%s]%s(%s) %s [%s]%s %d[-]  @ [%s]%d %s %s [%s]%s(%s) [-]%s\n", 
-		awayStyle, game.AwayTeam, game.AwayRecord,  awaySpreadResult, awayStyle, awayOdds, game.AwayScore, homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord, oddsInfo)
+		awayStyle, game.AwayTeam, game.AwayRecord,  awaySpreadResult, awayStyle, awayOdds, game.AwayScore, 
+		homeStyle, game.HomeScore, homeOdds, homeSpreadResult, homeStyle, game.HomeTeam, game.HomeRecord, oddsInfo)
 }
